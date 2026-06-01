@@ -1,0 +1,60 @@
+/* Re-use core structures from Login.css */
+
+.password-strength-container {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.strength-bar-wrapper {
+  display: flex;
+  gap: 5px;
+  height: 4px;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+.strength-segment {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 2px;
+  transition: var(--transition-smooth);
+}
+
+.dark-theme .strength-segment {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Strength Colors */
+.strength-segment.weak {
+  background: var(--color-error) !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.strength-segment.medium {
+  background: var(--accent-color) !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.strength-segment.strong {
+  background: var(--color-success) !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.strength-text-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-muted);
+}
+
+.strength-text-label span:last-child {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.strength-text-label span.weak { color: var(--color-error); }
+.strength-text-label span.medium { color: var(--accent-color); }
+.strength-text-label span.strong { color: var(--color-success); }
