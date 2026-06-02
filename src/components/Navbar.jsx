@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
-import { ShoppingCart, Heart, Search, User, LogOut, Sun, Moon, ShoppingBag, Menu, X } from 'lucide-react';
+import { ShoppingCart, Heart, Search, User, LogOut, Sun, Moon, ShoppingBag, Menu, X, Shield } from 'lucide-react';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -134,6 +134,16 @@ const Navbar = () => {
                     <User size={16} />
                     <span>My Dashboard</span>
                   </Link>
+                  {currentUser?.role === 'admin' && (
+                    <Link 
+                      to="/admin" 
+                      onClick={() => setShowProfileDropdown(false)} 
+                      className="dropdown-item admin-nav-dropdown-item"
+                    >
+                      <Shield size={16} style={{ color: 'var(--secondary-color)' }} />
+                      <span style={{ fontWeight: 'bold', color: 'var(--secondary-color)' }}>Admin Panel</span>
+                    </Link>
+                  )}
                   <button onClick={handleLogout} className="dropdown-item logout-btn-item">
                     <LogOut size={16} />
                     <span>Sign Out</span>
@@ -190,6 +200,11 @@ const Navbar = () => {
                 <li>
                   <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>My Dashboard</Link>
                 </li>
+                {currentUser?.role === 'admin' && (
+                  <li>
+                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)} style={{ color: 'var(--secondary-color)', fontWeight: 'bold' }}>Admin Panel</Link>
+                  </li>
+                )}
                 <li>
                   <span onClick={handleLogout} className="mobile-logout-anchor">Sign Out</span>
                 </li>

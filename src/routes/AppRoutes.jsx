@@ -4,12 +4,21 @@ import Home from '../pages/Home';
 import Dashboard from '../pages/Dashboard';
 import Login from '../components/Login';
 import Register from '../components/Register';
+import AdminDashboard from '../srinivas/AdminDashboard';
 import { authService } from '../services/authService';
 
 // Guard for protected routes (e.g. Dashboard)
 const ProtectedRoute = ({ children }) => {
   const isAuth = authService.isAuthenticated();
   return isAuth ? children : <Navigate to="/login" replace />;
+};
+
+// Guard for admin-only routes (e.g. Admin Panel)
+const AdminRoute = ({ children }) => {
+  const isAuth = authService.isAuthenticated();
+  const currentUser = authService.getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
+  return isAuth && isAdmin ? children : <Navigate to="/dashboard" replace />;
 };
 
 // Guard for public-only auth routes (e.g. Login, Register)
@@ -50,6 +59,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
+        } 
+      />
+
+      {/* Admin-only Protected Pages */}
+      <Route 
+        path="/admin" 
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
         } 
       />
 
