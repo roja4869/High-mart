@@ -1,7 +1,8 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
+import { orderService } from '../services/orderService';
 import { User, LogOut, ShoppingCart, Heart, Package, Wallet, Trash2, CheckCircle, CreditCard, ChevronRight } from 'lucide-react';
 import CheckoutModal from '../srinivas/CheckoutModal';
 import './Dashboard.css';
@@ -19,8 +20,33 @@ const Dashboard = () => {
 
   // Checkout Modal State
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [ordersList, setOrdersList] = useState([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
-  const cartTotal = cart.reduce((total, item) => total + (item.price * (1 - item.discount / 100)) * item.quantity, 0);
+  const fetchOrders = async () => {
+    if (authService.isAuthenticated()) {
+      setIsLoadingOrders(true);
+      try {
+        const response = await orderService.getOrders();
+        if (response.success) {
+          setOrdersList(response.orders);
+        }
+      } catch (error) {
+        console.error('Failed to load orders from backend:', error.message);
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const cartTotal = cart.reduce((total, item) => {
+    const discount = item.discount || 0;
+    return total + (item.price * (1 - discount / 100)) * item.quantity;
+  }, 0);
 
   return (
     <div className="dashboard-page-wrapper section-padding">
@@ -81,19 +107,37 @@ const Dashboard = () => {
               <p className="wallet-promo-text">10% Cashbacks auto-applied on payments utilizing High Mart credits.</p>
             </div>
 
-            {/* Mock Order Tracker Card */}
+            {/* Order Tracker Card */}
             <div className="dashboard-widget glass-effect">
               <div className="widget-header">
                 <Package size={18} className="widget-icon primary" />
-                <h3>Active Shipments</h3>
+                <h3>Active Shipments ({ordersList.length})</h3>
               </div>
-              <div className="active-order-item">
-                <div className="order-progress-icon"><span className="order-pulse"></span></div>
-                <div className="order-tracker-info">
-                  <h4>Order #HM-183920</h4>
-                  <p>Status: Out for Delivery • ETA 2 Mins</p>
+              {ordersList.length > 0 ? (
+                <div className="active-orders-container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+                  {ordersList.map(order => (
+                    <div key={order.id} className="active-order-item" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                      <div className="order-progress-icon">
+                        <span className={order.status === 'Cancelled' ? 'order-pulse-cancelled' : 'order-pulse'}></span>
+                      </div>
+                      <div className="order-tracker-info" style={{ flexGrow: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h4 style={{ margin: 0 }}>Order #HM-00{order.id}</h4>
+                          <span style={{ fontSize: '11px', opacity: 0.6 }}>₹{order.totalAmount}</span>
+                        </div>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '12px' }}>
+                          Status: <strong style={{ color: order.status === 'Cancelled' ? '#ef4444' : '#10b981' }}>{order.status}</strong>
+                        </p>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', opacity: 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          To: {order.shippingAddress}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <p className="empty-widget-text">No active shipments found. Place an order to begin tracking.</p>
+              )}
             </div>
           </div>
 
@@ -197,7 +241,10 @@ const Dashboard = () => {
       </div>
       <CheckoutModal 
         isOpen={checkoutModalOpen} 
-        onClose={() => setCheckoutModalOpen(false)} 
+        onClose={() => {
+          setCheckoutModalOpen(false);
+          fetchOrders();
+        }} 
         cartItems={cart}
         cartTotal={cartTotal}
       />

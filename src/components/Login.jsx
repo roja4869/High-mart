@@ -6,7 +6,7 @@ import { Mail, Lock, Eye, EyeOff, ShoppingBag } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
-  const { addToast } = useContext(AppContext);
+  const { addToast, syncCart } = useContext(AppContext);
   const navigate = useNavigate();
   
   // Form State
@@ -80,6 +80,9 @@ const Login = () => {
       }
 
       addToast(data.message || 'Login successful!', 'success');
+      if (syncCart) {
+        await syncCart();
+      }
       
       // Redirect to dashboard
       setTimeout(() => {

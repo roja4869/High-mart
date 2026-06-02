@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
+import { productService } from '../services/productService';
 import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy } from 'lucide-react';
 import './Home.css';
 
@@ -28,6 +29,37 @@ const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart, toggleWishlist, wishlist, addToast } = useContext(AppContext);
+  const [productsList, setProductsList] = useState([]);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await productService.getProducts();
+        if (response.success || Array.isArray(response)) {
+          const list = response.products || response;
+          const mapped = list.map(p => {
+            const isFullUrl = p.image && (p.image.startsWith('http://') || p.image.startsWith('https://'));
+            return {
+              ...p,
+              image: isFullUrl ? p.image : `/uploads/${p.image}`,
+              rating: p.rating || 4.5,
+              discount: p.discount || 10
+            };
+          });
+          setProductsList(mapped);
+        }
+      } catch (err) {
+        console.warn("Failed to load products from backend, falling back to static featured products.", err.message);
+        const mappedFallback = FEATURED_PRODUCTS.map(p => ({
+          ...p,
+          rating: p.rating || 4.5,
+          discount: p.discount || 10
+        }));
+        setProductsList(mappedFallback);
+      }
+    };
+    loadProducts();
+  }, []);
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -258,7 +290,7 @@ const Home = () => {
         </div>
 
         <div className="products-grid">
-          {FEATURED_PRODUCTS.map(product => {
+          {productsList.map(product => {
             const isWishlisted = wishlist.some(item => item.id === product.id);
             return (
               <div key={product.id} className="product-card">
