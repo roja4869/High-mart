@@ -60,4 +60,4 @@ app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 
-// Trigger watch reload
+// Trigger watch reload - fixed backend connection and verified syntax

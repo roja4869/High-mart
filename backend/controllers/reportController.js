@@ -1,4 +1,4 @@
-import { orders, users, products } from '../data/mockDb.js';
+import { orders, users, products, inventoryLogs } from '../data/mockDb.js';
 
 /**
  * @desc    Get reports overview stats
@@ -150,6 +150,24 @@ export const getCharts = async (req, res, next) => {
         topProducts,
         recentOrders
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get inventory logs list
+ * @route   GET /api/reports/inventory-logs
+ * @access  Private/Admin
+ */
+export const getInventoryLogs = async (req, res, next) => {
+  try {
+    const sortedLogs = [...inventoryLogs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    res.json({
+      success: true,
+      count: sortedLogs.length,
+      logs: sortedLogs
     });
   } catch (error) {
     next(error);

@@ -63,7 +63,7 @@ export const paymentService = {
       const response = await api.post('/orders', {
         shippingAddress: orderData.shippingAddress,
         paymentMethod: orderData.paymentMethod,
-        paymentStatus: 'Paid',
+        paymentStatus: orderData.paymentStatus || 'Paid',
         transactionId: orderData.transactionId
       });
       return response.data;

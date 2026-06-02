@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import axios from 'axios';
 import { adminService } from './adminService';
 import { authService } from '../services/authService';
 import { AppContext } from '../App';
@@ -6,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   BarChart3, Plus, Search, Trash2, Edit3, ShieldAlert, ShoppingBag, 
   Users, DollarSign, Package, ClipboardList, LogOut, ArrowUpRight, 
-  Grid, RefreshCw, AlertTriangle, UserCheck, Eye, ChevronDown, CheckCircle
+  Grid, RefreshCw, AlertTriangle, UserCheck, Eye, ChevronDown, CheckCircle, X
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -24,6 +25,7 @@ const AdminDashboard = () => {
   const [productsList, setProductsList] = useState([]);
   const [ordersList, setOrdersList] = useState([]);
   const [usersList, setUsersList] = useState([]);
+  const [inventoryLogs, setInventoryLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Search & Filter states
@@ -89,6 +91,10 @@ const AdminDashboard = () => {
         ];
         setProductsList([...localProds, ...defaultProducts]);
       }
+
+      // 6. Fetch Inventory Logs
+      const logsData = await adminService.getInventoryLogs();
+      setInventoryLogs(logsData);
     } catch (error) {
       addToast('Error fetching database records.', 'error');
     } finally {
@@ -162,6 +168,46 @@ const AdminDashboard = () => {
       const response = await adminService.updateProduct(editingProduct.id, formData);
       addToast(response.message, 'success');
       setShowEditProduct(false);
+      fetchAllData();
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+  };
+
+  const handleQuickStockAdjustment = async (product, delta) => {
+    const newStock = Math.max(0, product.stock + delta);
+    if (newStock === product.stock) return;
+
+    // Use FormData since updateProduct expects multipart/form-data
+    const formData = new FormData();
+    formData.append('name', product.name);
+    formData.append('price', product.price.toString());
+    formData.append('category', product.category);
+    formData.append('stock', newStock.toString());
+    if (product.description) formData.append('description', product.description);
+
+    try {
+      const response = await adminService.updateProduct(product.id, formData);
+      addToast(response.message, 'success');
+      
+      // Update inventoryLogs locally if backend fallback was used
+      if (response.message.includes('simulated') || response.message.includes('mock')) {
+        const localLogs = JSON.parse(localStorage.getItem('highMartMockInventoryLogs') || '[]');
+        const nextLogId = localLogs.length > 0 ? Math.max(...localLogs.map(l => l.id)) + 1 : 1000;
+        const newLog = {
+          id: nextLogId,
+          productId: product.id,
+          productName: product.name,
+          activityType: "Stock Adjustment",
+          quantityChange: delta,
+          remainingStock: newStock,
+          performedBy: currentUser?.name || "Admin",
+          timestamp: new Date().toISOString()
+        };
+        localLogs.unshift(newLog);
+        localStorage.setItem('highMartMockInventoryLogs', JSON.stringify(localLogs));
+      }
+
       fetchAllData();
     } catch (err) {
       addToast(err.message, 'error');
@@ -339,7 +385,7 @@ const AdminDashboard = () => {
                     <DollarSign size={20} />
                   </div>
                 </div>
-                <h2>${stats.totalRevenue.toFixed(2)}</h2>
+                <h2>₹{stats.totalRevenue.toFixed(2)}</h2>
                 <div className="trend-percentage-text green">
                   <ArrowUpRight size={14} />
                   <span>+18.4% this week</span>
@@ -402,10 +448,10 @@ const AdminDashboard = () => {
                       <button onClick={() => setActiveTab('orders')} className="card-action-nav-link">View All Orders</button>
                     </div>
                     <div className="recent-orders-list-table">
-                      {charts.recentOrders.map(order => (
+                      {(charts?.recentOrders || []).map(order => (
                         <div key={order.id} className="recent-order-item-row">
                           <div className="order-initials-badge">
-                            {order.customerName[0].toUpperCase()}
+                            {(order.customerName || 'U')[0].toUpperCase()}
                           </div>
                           <div className="order-details-meta">
                             <h4>{order.customerName}</h4>
@@ -414,7 +460,7 @@ const AdminDashboard = () => {
                           <span className={`status-pill ${order.status.toLowerCase()}`}>
                             {order.status}
                           </span>
-                          <strong className="order-price-txt">${order.totalAmount.toFixed(2)}</strong>
+                          <strong className="order-price-txt">₹{order.totalAmount.toFixed(2)}</strong>
                         </div>
                       ))}
                     </div>
@@ -447,6 +493,49 @@ const AdminDashboard = () => {
                   </div>
 
                 </div>
+
+                {/* Warehouse Stock Logs Timeline */}
+                <div className="dashboard-grid-card glass-effect warehouse-timeline-card">
+                  <div className="grid-card-header">
+                    <h3>Warehouse Stock Audit Log</h3>
+                    <p className="timeline-subtitle-hint">Real-time stock movements & adjustments timeline</p>
+                  </div>
+                  <div className="timeline-activity-scroller">
+                    {(inventoryLogs || []).map(log => {
+                      const isDeduction = log.activityType?.toLowerCase().includes('deduction');
+                      const isInbound = log.activityType?.toLowerCase().includes('inbound');
+                      
+                      return (
+                        <div key={log.id} className="timeline-entry-row">
+                          <div className={`timeline-indicator-dot ${isDeduction ? 'deduction' : isInbound ? 'inbound' : 'adjustment'}`}>
+                            {isDeduction ? '-' : isInbound ? '+' : '✏️'}
+                          </div>
+                          <div className="timeline-body-content">
+                            <div className="timeline-body-details">
+                              <h4>{log.productName}</h4>
+                              <p>{log.activityType} • Performed by: <strong>{log.performedBy}</strong></p>
+                              <span className="timestamp-meta">
+                                {new Date(log.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                              </span>
+                            </div>
+                            <div className="timeline-right-pills">
+                              <span className={`timeline-qty-change-pill ${log.quantityChange > 0 ? 'positive' : 'negative'}`}>
+                                {log.quantityChange > 0 ? `+${log.quantityChange}` : log.quantityChange} units
+                              </span>
+                              <span className="timeline-remaining-stock-badge">
+                                Stock: {log.remainingStock} remaining
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {inventoryLogs.length === 0 && (
+                      <p className="table-empty-row-text">No warehouse activity logs found.</p>
+                    )}
+                  </div>
+                </div>
+
               </div>
             )}
 
@@ -548,7 +637,7 @@ const AdminDashboard = () => {
                             <div key={cat.category} className="legend-indicator-row">
                               <span className="legend-dot" style={{ backgroundColor: colors[i % colors.length] }}></span>
                               <span className="legend-label">{cat.category}</span>
-                              <strong className="legend-val">${cat.value.toFixed(2)}</strong>
+                              <strong className="legend-val">₹{cat.value.toFixed(2)}</strong>
                             </div>
                           );
                         })}
@@ -573,7 +662,7 @@ const AdminDashboard = () => {
                             <p>{prod.qty} items dispatched successfully</p>
                           </div>
                           <div className="product-rank-yield">
-                            <strong>${prod.revenue.toFixed(2)}</strong>
+                            <strong>₹{prod.revenue.toFixed(2)}</strong>
                             <span>Sales Yield</span>
                           </div>
                         </div>
@@ -651,15 +740,36 @@ const AdminDashboard = () => {
                           </td>
                           <td className="product-table-name"><strong>{prod.name}</strong></td>
                           <td><span className="table-cat-pill">{prod.category}</span></td>
-                          <td><strong>${prod.price.toFixed(2)}</strong></td>
-                          <td><strong>{prod.stock}</strong></td>
+                          <td><strong>₹{prod.price.toFixed(2)}</strong></td>
                           <td>
-                            {prod.stock <= 5 ? (
-                              <span className="inventory-status-pill danger">Low Stock</span>
-                            ) : (
-                              <span className="inventory-status-pill success">Optimal</span>
-                            )}
-                          </td>
+                             <div className="stock-adjustment-flex">
+                               <button 
+                                 type="button"
+                                 onClick={() => handleQuickStockAdjustment(prod, -1)}
+                                 className="stock-adjustment-btn decrease"
+                                 disabled={prod.stock <= 0}
+                                 aria-label="Decrease stock"
+                               >
+                                 -
+                               </button>
+                               <strong className="stock-qty-lbl">{prod.stock}</strong>
+                               <button 
+                                 type="button"
+                                 onClick={() => handleQuickStockAdjustment(prod, 1)}
+                                 className="stock-adjustment-btn increase"
+                                 aria-label="Increase stock"
+                               >
+                                 +
+                               </button>
+                             </div>
+                           </td>
+                           <td>
+                             {prod.stock <= 5 ? (
+                               <span className="inventory-status-pill danger">Low Stock</span>
+                             ) : (
+                               <span className="inventory-status-pill success">Optimal</span>
+                             )}
+                           </td>
                           <td>
                             <div className="table-action-btn-row">
                               <button 
@@ -719,6 +829,7 @@ const AdminDashboard = () => {
                         <th>Payment Method</th>
                         <th>Payment Status</th>
                         <th>Workflow Status</th>
+                        <th>View Items</th>
                         <th>Manage Status</th>
                       </tr>
                     </thead>
@@ -728,7 +839,7 @@ const AdminDashboard = () => {
                           <td><strong>#HM-{order.id}</strong></td>
                           <td><strong>{order.customerName || 'Jane Doe'}</strong></td>
                           <td>{new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                          <td><strong>${order.totalAmount.toFixed(2)}</strong></td>
+                          <td><strong>₹{order.totalAmount.toFixed(2)}</strong></td>
                           <td>{order.paymentMethod || 'Stripe'}</td>
                           <td>
                             <span className={`payment-status-badge ${order.paymentStatus?.toLowerCase() || 'paid'}`}>
@@ -740,6 +851,19 @@ const AdminDashboard = () => {
                               {order.status}
                             </span>
                           </td>
+                          <td>
+                             <button
+                               type="button"
+                               onClick={() => {
+                                 setViewingOrder(order);
+                                 setShowOrderDetails(true);
+                               }}
+                               className="action-circle-btn inspect"
+                               aria-label="Inspect Order Items"
+                             >
+                               <Eye size={14} />
+                             </button>
+                           </td>
                           <td>
                             <select 
                               value={order.status}
@@ -867,7 +991,7 @@ const AdminDashboard = () => {
                 />
               </div>
               <div className="form-input-box">
-                <label>Listing Price ($) *</label>
+                <label>Listing Price (₹) *</label>
                 <input 
                   type="number" 
                   step="0.01" 
@@ -945,7 +1069,7 @@ const AdminDashboard = () => {
                 />
               </div>
               <div className="form-input-box">
-                <label>Listing Price ($)</label>
+                <label>Listing Price (₹)</label>
                 <input 
                   type="number" 
                   step="0.01" 
@@ -994,6 +1118,64 @@ const AdminDashboard = () => {
                 <button type="submit" className="dialog-confirm-submit-btn">Save Changes</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== VIEW PURCHASED ITEMS MODAL ==================== */}
+      {showOrderDetails && viewingOrder && (
+        <div className="admin-dialog-backdrop animate-fade-in">
+          <div className="admin-dialog glass-effect order-items-dialog">
+            <div className="dialog-header">
+              <h3>Purchased Items - Order #HM-{viewingOrder.id}</h3>
+              <button onClick={() => setShowOrderDetails(false)} className="dialog-close-btn"><X size={18} /></button>
+            </div>
+            <div className="order-inspection-body">
+              <div className="order-meta-info-grid">
+                <div>
+                  <span className="lbl text-muted">Customer Name</span>
+                  <strong className="val text-dark">{viewingOrder.customerName || 'Jane Doe'}</strong>
+                </div>
+                <div>
+                  <span className="lbl text-muted">Payment status</span>
+                  <span className={`val payment-status-badge ${viewingOrder.paymentStatus?.toLowerCase() || 'paid'}`}>
+                    {viewingOrder.paymentStatus || 'Paid'}
+                  </span>
+                </div>
+                <div className="form-double-span">
+                  <span className="lbl text-muted">Shipping address</span>
+                  <p className="val text-dark shipping-addr-txt">{viewingOrder.shippingAddress}</p>
+                </div>
+                <div className="form-double-span">
+                  <span className="lbl text-muted">Total Paid</span>
+                  <strong className="val text-dark grand-total-price">₹{viewingOrder.totalAmount.toFixed(2)}</strong>
+                </div>
+              </div>
+
+              <hr className="dialog-divider" />
+
+              <h4 className="purchased-items-title">Items Ordered ({viewingOrder.items?.length || 0})</h4>
+              <div className="purchased-items-scroll-list">
+                {viewingOrder.items?.map((item, idx) => (
+                  <div key={idx} className="purchased-item-card-row">
+                    <div className="purchased-item-thumb">
+                      <img src={item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80'} alt={item.name} />
+                    </div>
+                    <div className="purchased-item-details">
+                      <h4>{item.name}</h4>
+                      <p className="item-pricing">₹{item.price.toFixed(2)} x {item.quantity}</p>
+                    </div>
+                    <div className="purchased-item-total">
+                      <strong>₹{(item.price * item.quantity).toFixed(2)}</strong>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="dialog-actions-footer single-action">
+                <button type="button" className="dialog-confirm-submit-btn" onClick={() => setShowOrderDetails(false)}>Close Inspection</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

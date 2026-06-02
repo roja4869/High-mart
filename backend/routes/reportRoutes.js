@@ -1,5 +1,5 @@
 import express from 'express';
-import { getStats, getCharts } from '../controllers/reportController.js';
+import { getStats, getCharts, getInventoryLogs } from '../controllers/reportController.js';
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -10,5 +10,6 @@ router.use(adminOnly);
 
 router.get('/stats', getStats);
 router.get('/charts', getCharts);
+router.get('/inventory-logs', getInventoryLogs);
 
 export default router;

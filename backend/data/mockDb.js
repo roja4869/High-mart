@@ -53,6 +53,7 @@ export const products = [
 export const users = [];
 export const carts = {}; // Map: userId -> Array of CartItems
 export const orders = [];
+export const inventoryLogs = [];
 
 // Initialize with a pre-seeded test user (password: password123)
 const initializeSeedUser = async () => {
@@ -149,6 +150,48 @@ const initializeSeedUser = async () => {
     paymentStatus: "Failed",
     transactionId: "ch_mock_5",
     createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() // 4 days ago
+  });
+
+  // Seed some initial inventory logs for testing warehouse tracking
+  inventoryLogs.push({
+    id: 1,
+    productId: 1,
+    productName: "Premium Coffee Maker",
+    activityType: "Stock Inbound",
+    quantityChange: 15,
+    remainingStock: 15,
+    performedBy: "System Seeding",
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  inventoryLogs.push({
+    id: 2,
+    productId: 2,
+    productName: "Wireless Noise-Cancelling Headphones",
+    activityType: "Stock Inbound",
+    quantityChange: 25,
+    remainingStock: 25,
+    performedBy: "System Seeding",
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  inventoryLogs.push({
+    id: 3,
+    productId: 1,
+    productName: "Premium Coffee Maker",
+    activityType: "Order Deduction",
+    quantityChange: -1,
+    remainingStock: 14,
+    performedBy: "Order #HM-101 (Jane Doe)",
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  inventoryLogs.push({
+    id: 4,
+    productId: 4,
+    productName: "Stainless Steel Water Bottle",
+    activityType: "Order Deduction",
+    quantityChange: -2,
+    remainingStock: 48,
+    performedBy: "Order #HM-102 (Jane Doe)",
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   });
 };
 

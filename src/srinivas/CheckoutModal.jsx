@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../App';
 import { paymentService } from './paymentService';
 import { authService } from '../services/authService';
-import { X, Lock, Shield, CheckCircle, HelpCircle, Info, CreditCard } from 'lucide-react';
+import { X, Lock, Shield, CheckCircle, HelpCircle, Info, CreditCard, DollarSign } from 'lucide-react';
 import './CheckoutModal.css';
 
 const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
@@ -49,7 +49,8 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
   const expressShippingFee = cartTotal > 100 ? 0 : 5.99;
   const discountAmount = cartTotal * (discountApplied / 100);
   const estTax = (cartTotal - discountAmount) * 0.08; // 8% sales tax
-  const finalTotal = cartTotal - discountAmount + estTax + expressShippingFee;
+  const codFee = paymentMethod === 'cod' ? 9.00 : 0;
+  const finalTotal = cartTotal - discountAmount + estTax + expressShippingFee + codFee;
 
   const handleApplyCoupon = () => {
     if (couponCode.toUpperCase().trim() === 'HMTECH70') {
@@ -112,6 +113,40 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
         addToast('Please provide a valid card CVC code.', 'error');
         return;
       }
+    }
+
+    if (paymentMethod === 'cod') {
+      setIsProcessing(true);
+      setProcessingStep(0); // Securing endpoint
+      try {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        setProcessingStep(1); // Gateway handshakes
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setProcessingStep(2); // Order register
+        
+        const transactionId = `cod_mock_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`;
+        
+        await paymentService.createPaidOrder({
+          shippingAddress,
+          paymentMethod: 'Cash on Delivery (COD)',
+          paymentStatus: 'Pending',
+          transactionId,
+          totalAmount: parseFloat(finalTotal.toFixed(2)),
+          customerName: currentUser.name,
+          items: cartItems
+        });
+
+        setTxId(transactionId);
+        setProcessingStep(3); // Success
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        clearCart();
+        addToast('COD Order Registered Successfully!', 'success');
+      } catch (err) {
+        addToast(`Order failed: ${err.message}`, 'error');
+        setIsProcessing(false);
+      }
+      return;
     }
 
     // Begin visual authorization steps
@@ -233,11 +268,11 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
                   </div>
                   <div className="receipt-row">
                     <span>Paid Amount:</span>
-                    <strong>${finalTotal.toFixed(2)}</strong>
+                    <strong>₹{finalTotal.toFixed(2)}</strong>
                   </div>
                   <div className="receipt-row">
                     <span>Method:</span>
-                    <strong>{paymentMethod === 'stripe' ? 'Stripe Secure Card' : 'Razorpay Express'}</strong>
+                    <strong>{paymentMethod === 'stripe' ? 'Stripe Secure Card' : paymentMethod === 'razorpay' ? 'Razorpay Express' : 'Cash on Delivery (COD)'}</strong>
                   </div>
                 </div>
                 <button className="checkout-success-continue-btn" onClick={onClose}>
@@ -299,6 +334,14 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
                   >
                     <Shield size={16} />
                     <span>Razorpay UPI</span>
+                  </button>
+                  <button 
+                    type="button"
+                    className={`gateway-tab ${paymentMethod === 'cod' ? 'active' : ''}`}
+                    onClick={() => setPaymentMethod('cod')}
+                  >
+                    <DollarSign size={16} />
+                    <span>Cash on Delivery</span>
                   </button>
                 </div>
 
@@ -386,7 +429,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
                       </div>
                     </div>
                   </div>
-                ) : (
+                ) : paymentMethod === 'razorpay' ? (
                   /* RAZORPAY UPI DETAILS */
                   <div className="razorpay-express-inputs-panel animate-fade-in">
                     <div className="razorpay-visual-bulletin glass-effect">
@@ -405,13 +448,24 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
                       />
                     </div>
                   </div>
+                ) : (
+                  /* CASH ON DELIVERY DETAILS */
+                  <div className="cod-inputs-panel animate-fade-in">
+                    <div className="cod-visual-bulletin glass-effect">
+                      <DollarSign size={28} className="cod-dollar-icon" />
+                      <div className="bulletin-text">
+                        <h4>Cash on Delivery Service (COD)</h4>
+                        <p>An extra surcharge of <strong>₹9.00</strong> COD handling fee is added to your total. Pay using Cash, UPI, or card when the shipping carrier hands over your package.</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
               {/* Secure Actions Button */}
               <button type="submit" className="secure-checkout-submit-btn">
                 <Lock size={16} />
-                <span>Confirm Payment of ${finalTotal.toFixed(2)}</span>
+                <span>Confirm Payment of ₹{finalTotal.toFixed(2)}</span>
               </button>
             </form>
 
@@ -426,7 +480,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
                     </div>
                     <div className="sum-item-desc">
                       <h4>{item.name}</h4>
-                      <p>${(item.price * (1 - item.discount / 100)).toFixed(2)} x {item.quantity}</p>
+                      <p>₹{(item.price * (1 - item.discount / 100)).toFixed(2)} x {item.quantity}</p>
                     </div>
                   </div>
                 ))}
@@ -449,26 +503,32 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
               <ul className="cost-breakdown-checklist">
                 <li>
                   <span className="lbl">Items Subtotal</span>
-                  <span className="val">${cartTotal.toFixed(2)}</span>
+                  <span className="val">₹{cartTotal.toFixed(2)}</span>
                 </li>
                 {discountApplied > 0 && (
                   <li className="discount-applied">
                     <span className="lbl">Promo Code ({discountApplied}%)</span>
-                    <span className="val">-${discountAmount.toFixed(2)}</span>
+                    <span className="val">-₹{discountAmount.toFixed(2)}</span>
                   </li>
                 )}
                 <li>
                   <span className="lbl">Express Priority Shipping</span>
-                  <span className="val">{expressShippingFee === 0 ? 'FREE' : `$${expressShippingFee.toFixed(2)}`}</span>
+                  <span className="val">{expressShippingFee === 0 ? 'FREE' : `₹${expressShippingFee.toFixed(2)}`}</span>
                 </li>
                 <li>
                   <span className="lbl">Estimated GST/Sales Tax (8%)</span>
-                  <span className="val">${estTax.toFixed(2)}</span>
+                  <span className="val">₹{estTax.toFixed(2)}</span>
                 </li>
+                {paymentMethod === 'cod' && (
+                  <li className="cod-surcharge-row">
+                    <span className="lbl">COD Service Fee Surcharge</span>
+                    <span className="val">₹9.00</span>
+                  </li>
+                )}
                 <hr className="sub-divider" />
                 <li className="grand-total-row">
                   <span className="lbl">Grand Total</span>
-                  <span className="val">${finalTotal.toFixed(2)}</span>
+                  <span className="val">₹{finalTotal.toFixed(2)}</span>
                 </li>
               </ul>
 

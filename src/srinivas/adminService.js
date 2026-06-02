@@ -122,6 +122,46 @@ export const adminService = {
     }
   },
 
+  async getInventoryLogs() {
+    try {
+      const response = await api.get('/reports/inventory-logs');
+      return response.data.logs;
+    } catch (err) {
+      console.warn('Backend connection unavailable, pulling simulated inventory logs.', err.message);
+
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const mockOrders = JSON.parse(localStorage.getItem('highMartMockOrders') || '[]');
+          
+          const defaultLogs = [
+            { id: 4, productId: 4, productName: "Stainless Steel Water Bottle", activityType: "Order Deduction", quantityChange: -2, remainingStock: 48, performedBy: "Order #HM-102 (Jane Doe)", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+            { id: 3, productId: 1, productName: "Premium Coffee Maker", activityType: "Order Deduction", quantityChange: -1, remainingStock: 14, performedBy: "Order #HM-101 (Jane Doe)", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+            { id: 2, productId: 2, productName: "Wireless Noise-Cancelling Headphones", activityType: "Stock Inbound", quantityChange: 25, remainingStock: 25, performedBy: "System Seeding", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+            { id: 1, productId: 1, productName: "Premium Coffee Maker", activityType: "Stock Inbound", quantityChange: 15, remainingStock: 15, performedBy: "System Seeding", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() }
+          ];
+
+          // Dynamically prepend logs for newly created mock orders in client
+          mockOrders.forEach((o, index) => {
+            o.items.forEach((item, itemIdx) => {
+              defaultLogs.unshift({
+                id: 100 + index * 10 + itemIdx,
+                productId: item.productId,
+                productName: item.name,
+                activityType: "Order Deduction",
+                quantityChange: -item.quantity,
+                remainingStock: 5, // Simulated
+                performedBy: `Order #HM-${o.id} (${o.customerName || 'Shopper'})`,
+                timestamp: o.createdAt
+              });
+            });
+          });
+
+          resolve(defaultLogs);
+        }, 500);
+      });
+    }
+  },
+
   // ==================== USER MANAGEMENT ====================
   async getUsers() {
     try {

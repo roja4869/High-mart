@@ -155,23 +155,29 @@
 /* Tab Selectors */
 .gateway-selector-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
   margin-bottom: 20px;
 }
 
+@media (max-width: 580px) {
+  .gateway-selector-tabs {
+    grid-template-columns: 1fr;
+  }
+}
+
 .gateway-tab {
-  padding: 12px;
+  padding: 10px 6px;
   border-radius: var(--border-radius-md);
   border: 1px solid var(--border-color);
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-dark);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   transition: var(--transition-smooth);
 }
 
@@ -651,4 +657,26 @@
 
 .checkout-success-continue-btn:hover {
   transform: translateY(-1px);
+}
+
+/* Cash on Delivery Surcharges & Bulletins */
+.cod-inputs-panel {
+  margin-top: 10px;
+}
+.cod-visual-bulletin {
+  padding: 16px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  background: rgba(16, 185, 129, 0.05);
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.cod-dollar-icon {
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+.cod-surcharge-row {
+  color: var(--color-error) !important;
+  font-weight: 600;
 }

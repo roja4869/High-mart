@@ -1,4 +1,4 @@
-import { orders, carts, products } from '../data/mockDb.js';
+import { orders, carts, products, inventoryLogs } from '../data/mockDb.js';
 
 /**
  * @desc    Create a new order from cart
@@ -8,7 +8,7 @@ import { orders, carts, products } from '../data/mockDb.js';
 export const createOrder = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { shippingAddress } = req.body;
+    const { shippingAddress, paymentMethod, paymentStatus, transactionId } = req.body;
 
     if (!shippingAddress) {
       res.status(400);
@@ -53,18 +53,42 @@ export const createOrder = async (req, res, next) => {
       });
     }
 
+    // Calculate dynamic pricing totals
+    const expressShippingFee = totalAmount > 100 ? 0 : 5.99;
+    const estTax = totalAmount * 0.08;
+    const codFee = paymentMethod === 'Cash on Delivery (COD)' ? 9.00 : 0;
+    const grandTotal = totalAmount + expressShippingFee + estTax + codFee;
+
     // Create the order
     const newOrder = {
       id: orders.length > 0 ? Math.max(...orders.map(o => o.id)) + 1 : 1,
       userId,
       items: itemsToOrder,
-      totalAmount: parseFloat(totalAmount.toFixed(2)),
+      totalAmount: parseFloat(grandTotal.toFixed(2)),
       shippingAddress,
       status: 'Pending',
+      paymentMethod: paymentMethod || 'Stripe',
+      paymentStatus: paymentStatus || 'Paid',
+      transactionId: transactionId || `ch_mock_${Date.now()}`,
       createdAt: new Date().toISOString()
     };
 
     orders.push(newOrder);
+
+    // Add inventory logs for each decremented stock
+    for (const item of itemsToOrder) {
+      const product = products.find(p => p.id === item.productId);
+      inventoryLogs.push({
+        id: inventoryLogs.length > 0 ? Math.max(...inventoryLogs.map(l => l.id)) + 1 : 1,
+        productId: item.productId,
+        productName: item.name,
+        activityType: "Order Deduction",
+        quantityChange: -item.quantity,
+        remainingStock: product ? product.stock : 0,
+        performedBy: `Order #HM-${newOrder.id} (${req.user?.name || 'Shopper'})`,
+        timestamp: newOrder.createdAt
+      });
+    }
 
     // Empty the cart
     carts[userId] = [];
