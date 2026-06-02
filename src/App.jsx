@@ -150,6 +150,7 @@ const App = () => {
         removeFromCart,
         clearCart,
         wishlist,
+        setWishlist,
         toggleWishlist,
         toasts,
         addToast

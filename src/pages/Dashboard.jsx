@@ -92,7 +92,7 @@ const Dashboard = () => {
                 <h3>High Mart Wallet</h3>
               </div>
               <div className="wallet-balance-box">
-                <span className="wallet-amount">$250.00</span>
+                <span className="wallet-amount">₹25,000.00</span>
                 <span className="wallet-lbl">Available Credits</span>
               </div>
               <p className="wallet-promo-text">10% Cashbacks auto-applied on payments utilizing High Mart credits.</p>
@@ -140,7 +140,7 @@ const Dashboard = () => {
                         </div>
                         <div className="cart-item-desc">
                           <h4>{item.name}</h4>
-                          <p>${(item.price * (1 - item.discount / 100)).toFixed(2)} x {item.quantity}</p>
+                          <p>₹{(item.price * (1 - item.discount / 100)).toFixed(2)} x {item.quantity}</p>
                         </div>
                         <button 
                           onClick={() => removeFromCart(item.id)} 
@@ -156,7 +156,7 @@ const Dashboard = () => {
                   <div className="cart-checkout-summary">
                     <div className="summary-price-row">
                       <span>Total Amount:</span>
-                      <span className="summary-total-amount">${cartTotal.toFixed(2)}</span>
+                      <span className="summary-total-amount">₹{cartTotal.toFixed(2)}</span>
                     </div>
                     <button 
                       onClick={handleCheckout} 
@@ -189,7 +189,7 @@ const Dashboard = () => {
                       </div>
                       <div className="wishlist-desc">
                         <h4>{item.name}</h4>
-                        <p>${(item.price * (1 - item.discount / 100)).toFixed(2)}</p>
+                        <p>₹{(item.price * (1 - item.discount / 100)).toFixed(2)}</p>
                       </div>
                       <div className="wishlist-actions">
                         <button 

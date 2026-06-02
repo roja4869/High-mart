@@ -20,8 +20,9 @@ const Navbar = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      addToast(`Search simulated for: "${searchQuery}"`, 'info');
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
+      setMobileMenuOpen(false);
     }
   };
 
@@ -74,7 +75,7 @@ const Navbar = () => {
             <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Home</Link>
           </li>
           <li>
-            <span onClick={() => handleNavClick('categories')} className="nav-click-anchor">Categories</span>
+            <Link to="/products" className={location.pathname === '/products' ? 'active' : ''}>Categories</Link>
           </li>
           <li>
             <span onClick={() => handleNavClick('deals')} className="nav-click-anchor">Deals</span>
@@ -92,14 +93,14 @@ const Navbar = () => {
           </button>
 
           {/* Wishlist */}
-          <Link to={isAuth ? "/dashboard" : "/login"} className="action-btn wishlist-icon-link" aria-label="Wishlist">
+          <Link to="/wishlist" className="action-btn wishlist-icon-link" aria-label="Wishlist">
             <Heart size={20} />
             {wishlist.length > 0 && <span className="action-badge">{wishlist.length}</span>}
           </Link>
 
           {/* Cart */}
           <div className="cart-hover-container">
-            <Link to={isAuth ? "/dashboard" : "/login"} className="action-btn cart-icon-link" aria-label="Shopping Cart">
+            <Link to="/cart" className="action-btn cart-icon-link" aria-label="Shopping Cart">
               <ShoppingCart size={20} />
               {totalCartItems > 0 && <span className="action-badge success">{totalCartItems}</span>}
             </Link>
@@ -177,7 +178,7 @@ const Navbar = () => {
               <Link to="/" onClick={() => setMobileMenuOpen(false)} className={location.pathname === '/' ? 'active' : ''}>Home</Link>
             </li>
             <li>
-              <span onClick={() => handleNavClick('categories')}>Categories</span>
+              <Link to="/products" onClick={() => setMobileMenuOpen(false)}>Categories</Link>
             </li>
             <li>
               <span onClick={() => handleNavClick('deals')}>Deals</span>

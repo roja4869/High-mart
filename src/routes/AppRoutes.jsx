@@ -4,6 +4,10 @@ import Home from '../pages/Home';
 import Dashboard from '../pages/Dashboard';
 import Login from '../components/Login';
 import Register from '../components/Register';
+import ProductList from '../pages/ProductList';
+import ProductDetail from '../pages/ProductDetail';
+import Cart from '../pages/Cart';
+import Wishlist from '../pages/Wishlist';
 import { authService } from '../services/authService';
 
 // Guard for protected routes (e.g. Dashboard)
@@ -24,6 +28,10 @@ const AppRoutes = () => {
       {/* Public Pages */}
       <Route path="/" element={<Home />} />
       <Route path="/home" element={<Navigate to="/" replace />} />
+      <Route path="/products" element={<ProductList />} />
+      <Route path="/product/:id" element={<ProductDetail />} />
+      <Route path="/cart" element={<Cart />} />
+      <Route path="/wishlist" element={<Wishlist />} />
 
       {/* Guest-only Auth Pages */}
       <Route 

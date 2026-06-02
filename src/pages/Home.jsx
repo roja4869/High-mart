@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
 import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy } from 'lucide-react';
@@ -6,11 +7,11 @@ import './Home.css';
 
 // Mock Products Data
 const FEATURED_PRODUCTS = [
-  { id: 1, name: 'Premium Organic Almonds (1kg)', category: 'Groceries', price: 14.99, rating: 4.8, discount: 10, image: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&q=80' },
-  { id: 2, name: 'Wireless Over-Ear ANC Headphones', category: 'Electronics', price: 129.99, rating: 4.9, discount: 20, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
-  { id: 3, name: 'Minimalist Quartz Leather Watch', category: 'Fashion', price: 79.99, rating: 4.6, discount: 15, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
-  { id: 4, name: 'Ergonomic Adjustable Office Chair', category: 'Home & Kitchen', price: 149.99, rating: 4.8, discount: 12, image: 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=400&q=80' },
-  { id: 5, name: 'Smart Fitness Tracker & HR Monitor', category: 'Electronics', price: 49.99, rating: 4.5, discount: 25, image: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=400&q=80' },
+  { id: 4, name: 'Premium Organic Almonds (1kg)', category: 'Groceries', price: 14.99, rating: 4.8, discount: 10, image: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&q=80' },
+  { id: 1, name: 'Wireless Over-Ear ANC Headphones', category: 'Electronics', price: 129.99, rating: 4.9, discount: 20, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
+  { id: 2, name: 'Minimalist Quartz Leather Watch', category: 'Fashion', price: 79.99, rating: 4.6, discount: 15, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
+  { id: 5, name: 'Ergonomic Adjustable Office Chair', category: 'Home & Kitchen', price: 149.99, rating: 4.8, discount: 12, image: 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=400&q=80' },
+  { id: 3, name: 'Smart Fitness Tracker & HR Monitor', category: 'Electronics', price: 49.99, rating: 4.5, discount: 25, image: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=400&q=80' },
   { id: 6, name: 'Non-Stick Ceramic Cookware Set', category: 'Home & Kitchen', price: 89.99, rating: 4.7, discount: 30, image: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=400&q=80' },
   { id: 7, name: 'Organic Lavender Soothing Lotion', category: 'Beauty', price: 18.99, rating: 4.6, discount: 5, image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&q=80' },
   { id: 8, name: 'Vintage Waterproof Canvas Backpack', category: 'Fashion', price: 59.99, rating: 4.7, discount: 10, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80' }
@@ -24,7 +25,22 @@ const REVIEWS = [
 ];
 
 const Home = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart, toggleWishlist, wishlist, addToast } = useContext(AppContext);
+
+  useEffect(() => {
+    if (location.state?.scrollTo) {
+      const el = document.getElementById(location.state.scrollTo);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+      // Clear state so it doesn't re-scroll on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   // 1. Flash Sale Timer (Hours, Minutes, Seconds)
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 34, seconds: 19 });
@@ -79,7 +95,7 @@ const Home = () => {
   };
 
   const handleCategoryScroll = (catId) => {
-    addToast(`Browsing category: ${catId}`, 'info');
+    navigate(`/products?category=${encodeURIComponent(catId)}`);
   };
 
   return (
@@ -248,7 +264,9 @@ const Home = () => {
               <div key={product.id} className="product-card">
                 {/* Image and badges */}
                 <div className="product-image-box">
-                  <img src={product.image} alt={product.name} />
+                  <Link to={`/product/${product.id}`}>
+                    <img src={product.image} alt={product.name} />
+                  </Link>
                   <div className="product-badges">
                     <span className="discount-badge">-{product.discount}%</span>
                   </div>
@@ -264,7 +282,9 @@ const Home = () => {
                 {/* Details */}
                 <div className="product-details-content">
                   <span className="product-cat-lbl">{product.category}</span>
-                  <h3 className="product-title-txt">{product.name}</h3>
+                  <h3 className="product-title-txt">
+                    <Link to={`/product/${product.id}`}>{product.name}</Link>
+                  </h3>
                   
                   {/* Stars */}
                   <div className="product-rating-stars">
@@ -277,8 +297,8 @@ const Home = () => {
                   {/* Price Row */}
                   <div className="product-price-action-row">
                     <div className="price-box">
-                      <span className="current-price">${(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
-                      <span className="old-price">${product.price.toFixed(2)}</span>
+                      <span className="current-price">₹{(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
+                      <span className="old-price">₹{product.price.toFixed(2)}</span>
                     </div>
                     <button 
                       onClick={() => addToCart(product)}
@@ -309,7 +329,7 @@ const Home = () => {
               <Truck size={24} />
             </div>
             <h3>Superfast 2h Delivery</h3>
-            <p>Free priority dispatch on orders above $35. Delivered directly to your room safely.</p>
+            <p>Free priority dispatch on orders above ₹500. Delivered directly to your room safely.</p>
           </div>
 
           {/* Card 2: Security */}
