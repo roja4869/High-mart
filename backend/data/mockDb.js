@@ -74,7 +74,6 @@ const initializeSeedUser = async () => {
     password: hashedAdminPassword,
     role: "admin"
   });
-
   // Seed some initial orders for rich Reports & Order Management
   orders.push({
     id: 101,
