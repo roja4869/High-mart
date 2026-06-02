@@ -51,10 +51,20 @@ export const authService = {
             return;
           }
 
+          // Standard admin account login option
+          if (normalizedEmail === 'admin@example.com' && password === 'admin123') {
+            const adminUser = { id: 'admin-uuid', name: 'Admin User', email: 'admin@example.com', phone: '9876543210', role: 'admin' };
+            const mockToken = 'mock-jwt-header.' + btoa(JSON.stringify(adminUser)) + '.mock-signature';
+            localStorage.setItem('highMartToken', mockToken);
+            localStorage.setItem('highMartUser', JSON.stringify(adminUser));
+            resolve({ message: 'Login successful (mock)!', token: mockToken, user: adminUser });
+            return;
+          }
+
           // Match registered user
           const user = mockUsers.find(u => u.email.toLowerCase() === normalizedEmail);
           if (user && user.password === password) {
-            const matchedUser = { id: user.id, name: user.name, email: user.email, phone: user.phone };
+            const matchedUser = { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role || 'user' };
             const mockToken = 'mock-jwt-header.' + btoa(JSON.stringify(matchedUser)) + '.mock-signature';
             localStorage.setItem('highMartToken', mockToken);
             localStorage.setItem('highMartUser', JSON.stringify(matchedUser));

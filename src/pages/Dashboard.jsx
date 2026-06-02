@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
 import { User, LogOut, ShoppingCart, Heart, Package, Wallet, Trash2, CheckCircle, CreditCard, ChevronRight } from 'lucide-react';
+import CheckoutModal from '../srinivas/CheckoutModal';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -16,28 +17,10 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  // Mock checkout trigger
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
+  // Checkout Modal State
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
 
   const cartTotal = cart.reduce((total, item) => total + (item.price * (1 - item.discount / 100)) * item.quantity, 0);
-
-  const handleCheckout = () => {
-    if (cart.length === 0) {
-      addToast('Your cart is empty.', 'info');
-      return;
-    }
-    setIsCheckingOut(true);
-    
-    // Simulate transaction delay
-    setTimeout(() => {
-      setIsCheckingOut(false);
-      setOrderSuccess(true);
-      addToast('Order placed successfully! Shipping partners notified.', 'success');
-      clearCart();
-      setTimeout(() => setOrderSuccess(false), 5000);
-    }, 2000);
-  };
 
   return (
     <div className="dashboard-page-wrapper section-padding">
@@ -123,12 +106,6 @@ const Dashboard = () => {
                 <h3>Shopping Cart ({cart.length} unique items)</h3>
               </div>
 
-              {orderSuccess && (
-                <div className="order-success-alert animate-fade-in">
-                  <CheckCircle size={18} />
-                  <span>Success! Your order has been placed. Transaction ID: HM-TX-{Math.floor(100000+Math.random()*900000)}</span>
-                </div>
-              )}
 
               {cart.length > 0 ? (
                 <div className="cart-checkout-block">
@@ -159,12 +136,11 @@ const Dashboard = () => {
                       <span className="summary-total-amount">₹{cartTotal.toFixed(2)}</span>
                     </div>
                     <button 
-                      onClick={handleCheckout} 
-                      className={`checkout-action-btn ${isCheckingOut ? 'checkout-loading' : ''}`}
-                      disabled={isCheckingOut}
+                      onClick={() => setCheckoutModalOpen(true)} 
+                      className="checkout-action-btn"
                     >
                       <CreditCard size={16} />
-                      <span>{isCheckingOut ? 'Authorizing Payment...' : 'Secure Checkout'}</span>
+                      <span>Secure Checkout</span>
                     </button>
                   </div>
                 </div>
@@ -219,6 +195,12 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      <CheckoutModal 
+        isOpen={checkoutModalOpen} 
+        onClose={() => setCheckoutModalOpen(false)} 
+        cartItems={cart}
+        cartTotal={cartTotal}
+      />
     </div>
   );
 };

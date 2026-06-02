@@ -53,6 +53,7 @@ export const products = [
 export const users = [];
 export const carts = {}; // Map: userId -> Array of CartItems
 export const orders = [];
+export const inventoryLogs = [];
 
 // Initialize with a pre-seeded test user (password: password123)
 const initializeSeedUser = async () => {
@@ -73,6 +74,124 @@ const initializeSeedUser = async () => {
     email: "admin@example.com",
     password: hashedAdminPassword,
     role: "admin"
+  });
+  // Seed some initial orders for rich Reports & Order Management
+  orders.push({
+    id: 101,
+    userId: 1, // Jane Doe
+    items: [
+      { productId: 1, name: "Premium Coffee Maker", price: 129.99, image: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&q=80", quantity: 1 }
+    ],
+    totalAmount: 129.99,
+    shippingAddress: "123 Main St, New York, NY 10001",
+    status: "Delivered",
+    paymentMethod: "Stripe",
+    paymentStatus: "Paid",
+    transactionId: "ch_mock_1",
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+  });
+
+  orders.push({
+    id: 102,
+    userId: 1,
+    items: [
+      { productId: 4, name: "Stainless Steel Water Bottle", price: 24.99, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80", quantity: 2 }
+    ],
+    totalAmount: 49.98,
+    shippingAddress: "123 Main St, New York, NY 10001",
+    status: "Shipped",
+    paymentMethod: "Razorpay",
+    paymentStatus: "Paid",
+    transactionId: "pay_mock_2",
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+  });
+
+  orders.push({
+    id: 103,
+    userId: 1,
+    items: [
+      { productId: 3, name: "Ergonomic Office Chair", price: 249.99, image: "https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=400&q=80", quantity: 1 },
+      { productId: 4, name: "Stainless Steel Water Bottle", price: 24.99, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80", quantity: 1 }
+    ],
+    totalAmount: 274.98,
+    shippingAddress: "123 Main St, New York, NY 10001",
+    status: "Pending",
+    paymentMethod: "Stripe",
+    paymentStatus: "Paid",
+    transactionId: "ch_mock_3",
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+  });
+
+  orders.push({
+    id: 104,
+    userId: 1,
+    items: [
+      { productId: 2, name: "Wireless Noise-Cancelling Headphones", price: 199.99, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80", quantity: 1 }
+    ],
+    totalAmount: 199.99,
+    shippingAddress: "456 Oak Rd, Los Angeles, CA 90001",
+    status: "Processing",
+    paymentMethod: "Stripe",
+    paymentStatus: "Paid",
+    transactionId: "ch_mock_4",
+    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() // 12 hours ago
+  });
+
+  orders.push({
+    id: 105,
+    userId: 1,
+    items: [
+      { productId: 5, name: "Ultra-Light Running Shoes", price: 89.99, image: "https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=400&q=80", quantity: 1 }
+    ],
+    totalAmount: 89.99,
+    shippingAddress: "123 Main St, New York, NY 10001",
+    status: "Cancelled",
+    paymentMethod: "Stripe",
+    paymentStatus: "Failed",
+    transactionId: "ch_mock_5",
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() // 4 days ago
+  });
+
+  // Seed some initial inventory logs for testing warehouse tracking
+  inventoryLogs.push({
+    id: 1,
+    productId: 1,
+    productName: "Premium Coffee Maker",
+    activityType: "Stock Inbound",
+    quantityChange: 15,
+    remainingStock: 15,
+    performedBy: "System Seeding",
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  inventoryLogs.push({
+    id: 2,
+    productId: 2,
+    productName: "Wireless Noise-Cancelling Headphones",
+    activityType: "Stock Inbound",
+    quantityChange: 25,
+    remainingStock: 25,
+    performedBy: "System Seeding",
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  inventoryLogs.push({
+    id: 3,
+    productId: 1,
+    productName: "Premium Coffee Maker",
+    activityType: "Order Deduction",
+    quantityChange: -1,
+    remainingStock: 14,
+    performedBy: "Order #HM-101 (Jane Doe)",
+    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  });
+  inventoryLogs.push({
+    id: 4,
+    productId: 4,
+    productName: "Stainless Steel Water Bottle",
+    activityType: "Order Deduction",
+    quantityChange: -2,
+    remainingStock: 48,
+    performedBy: "Order #HM-102 (Jane Doe)",
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   });
 };
 

@@ -1,4 +1,4 @@
-import { products } from '../data/mockDb.js';
+import { products, inventoryLogs } from '../data/mockDb.js';
 
 /**
  * @desc    Get all products
@@ -152,6 +152,20 @@ export const updateProduct = async (req, res, next) => {
       if (isNaN(stockNum) || stockNum < 0) {
         res.status(400);
         throw new Error('Product stock must be a non-negative integer');
+      }
+      
+      const stockDelta = stockNum - currentProduct.stock;
+      if (stockDelta !== 0) {
+        inventoryLogs.push({
+          id: inventoryLogs.length > 0 ? Math.max(...inventoryLogs.map(l => l.id)) + 1 : 1,
+          productId: currentProduct.id,
+          productName: currentProduct.name,
+          activityType: "Stock Adjustment",
+          quantityChange: stockDelta,
+          remainingStock: stockNum,
+          performedBy: req.user ? req.user.name : "Admin",
+          timestamp: new Date().toISOString()
+        });
       }
       updatedProduct.stock = stockNum;
     }
