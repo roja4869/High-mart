@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
-import { users } from '../data/mockDb.js';
+import { db } from '../data/db.js';
 
-export const protect = (req, res, next) => {
+export const protect = async (req, res, next) => {
   let token;
 
   if (
@@ -15,16 +15,18 @@ export const protect = (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretkeyhighmart2026');
 
-      // Find user from mock db
-      const user = users.find(u => u.id === decoded.id);
+      // Find user from db
+      const result = await db.execute({
+        sql: "SELECT id, name, email, role FROM users WHERE id = ?",
+        args: [decoded.id]
+      });
 
-      if (!user) {
+      if (result.rows.length === 0) {
         return res.status(401).json({ error: 'User not found, authorization failed' });
       }
 
-      // Attach user without sensitive password field
-      const { password, ...userWithoutPassword } = user;
-      req.user = userWithoutPassword;
+      const user = result.rows[0];
+      req.user = user;
       
       next();
     } catch (error) {

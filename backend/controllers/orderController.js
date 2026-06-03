@@ -1,4 +1,28 @@
-import { orders, carts, products, inventoryLogs } from '../data/mockDb.js';
+import { db } from '../data/db.js';
+
+// Helper to query orders and populate their items
+const getOrderDetails = async (sqlWhere, args = []) => {
+  const ordersResult = await db.execute({
+    sql: `SELECT id, user_id as userId, total_amount as totalAmount, shipping_address as shippingAddress, 
+                 status, payment_method as paymentMethod, payment_status as paymentStatus, 
+                 transaction_id as transactionId, created_at as createdAt 
+          FROM orders WHERE ${sqlWhere} ORDER BY created_at DESC`,
+    args
+  });
+  
+  const formattedOrders = [];
+  for (const row of ordersResult.rows) {
+    const itemsResult = await db.execute({
+      sql: `SELECT product_id as productId, name, price, image, quantity FROM order_items WHERE order_id = ?`,
+      args: [row.id]
+    });
+    formattedOrders.push({
+      ...row,
+      items: itemsResult.rows
+    });
+  }
+  return formattedOrders;
+};
 
 /**
  * @desc    Create a new order from cart
@@ -15,88 +39,100 @@ export const createOrder = async (req, res, next) => {
       throw new Error('Please provide a shipping address');
     }
 
-    const userCart = carts[userId] || [];
-    if (userCart.length === 0) {
+    // Retrieve cart items and current stocks
+    const userCart = await db.execute({
+      sql: `SELECT c.product_id as productId, p.name, p.price, p.image, c.quantity, p.stock
+            FROM cart c
+            JOIN products p ON c.product_id = p.id
+            WHERE c.user_id = ?`,
+      args: [userId]
+    });
+
+    if (userCart.rows.length === 0) {
       res.status(400);
       throw new Error('Your cart is empty. Please add items to your cart before checking out');
     }
 
-    // Double check stock availability and decrement stock
+    // Double check stock availability
     let totalAmount = 0;
-    const itemsToOrder = [];
-
-    for (const cartItem of userCart) {
-      const product = products.find(p => p.id === cartItem.productId);
-      
-      if (!product) {
-        res.status(404);
-        throw new Error(`Product '${cartItem.name}' (ID: ${cartItem.productId}) no longer exists`);
-      }
-
-      if (product.stock < cartItem.quantity) {
+    for (const item of userCart.rows) {
+      if (item.stock < item.quantity) {
         res.status(400);
-        throw new Error(`Insufficient stock for '${product.name}'. Only ${product.stock} items left`);
+        throw new Error(`Insufficient stock for '${item.name}'. Only ${item.stock} items left`);
       }
-
-      // Decrement stock
-      product.stock -= cartItem.quantity;
-
-      // Accumulate price
-      totalAmount += product.price * cartItem.quantity;
-
-      itemsToOrder.push({
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        quantity: cartItem.quantity
-      });
+      totalAmount += item.price * item.quantity;
     }
 
     // Calculate dynamic pricing totals
     const expressShippingFee = totalAmount > 100 ? 0 : 5.99;
     const estTax = totalAmount * 0.08;
     const codFee = paymentMethod === 'Cash on Delivery (COD)' ? 9.00 : 0;
-    const grandTotal = totalAmount + expressShippingFee + estTax + codFee;
+    const grandTotal = parseFloat((totalAmount + expressShippingFee + estTax + codFee).toFixed(2));
+
+    const txnId = transactionId || `ch_mock_${Date.now()}`;
+    const pStatus = paymentStatus || (paymentMethod === 'Cash on Delivery (COD)' ? 'Pending' : 'Paid');
 
     // Create the order
-    const newOrder = {
-      id: orders.length > 0 ? Math.max(...orders.map(o => o.id)) + 1 : 1,
-      userId,
-      items: itemsToOrder,
-      totalAmount: parseFloat(grandTotal.toFixed(2)),
-      shippingAddress,
-      status: 'Pending',
-      paymentMethod: paymentMethod || 'Stripe',
-      paymentStatus: paymentStatus || 'Paid',
-      transactionId: transactionId || `ch_mock_${Date.now()}`,
-      createdAt: new Date().toISOString()
-    };
+    const insertOrderResult = await db.execute({
+      sql: `INSERT INTO orders (user_id, total_amount, shipping_address, status, payment_method, payment_status, transaction_id)
+            VALUES (?, ?, ?, 'Pending', ?, ?, ?) RETURNING id`,
+      args: [userId, grandTotal, shippingAddress, paymentMethod || 'Stripe', pStatus, txnId]
+    });
 
-    orders.push(newOrder);
+    const newOrderId = insertOrderResult.rows[0].id;
 
-    // Add inventory logs for each decremented stock
-    for (const item of itemsToOrder) {
-      const product = products.find(p => p.id === item.productId);
-      inventoryLogs.push({
-        id: inventoryLogs.length > 0 ? Math.max(...inventoryLogs.map(l => l.id)) + 1 : 1,
-        productId: item.productId,
-        productName: item.name,
-        activityType: "Order Deduction",
-        quantityChange: -item.quantity,
-        remainingStock: product ? product.stock : 0,
-        performedBy: `Order #HM-${newOrder.id} (${req.user?.name || 'Shopper'})`,
-        timestamp: newOrder.createdAt
+    // Process each item: insert into order_items, decrement product stock, and log inventory activity
+    for (const item of userCart.rows) {
+      // 1. Insert order item
+      await db.execute({
+        sql: `INSERT INTO order_items (order_id, product_id, name, price, image, quantity)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [newOrderId, item.productId, item.name, item.price, item.image, item.quantity]
+      });
+
+      // 2. Decrement stock
+      const newStock = item.stock - item.quantity;
+      await db.execute({
+        sql: `UPDATE products SET stock = ? WHERE id = ?`,
+        args: [newStock, item.productId]
+      });
+
+      // 3. Log inventory activity
+      await db.execute({
+        sql: `INSERT INTO inventory_logs (product_id, product_name, activity_type, quantity_change, remaining_stock, performed_by)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [
+          item.productId,
+          item.name,
+          "Order Deduction",
+          -item.quantity,
+          newStock,
+          `Order #HM-${newOrderId} (${req.user?.name || 'Shopper'})`
+        ]
       });
     }
 
-    // Empty the cart
-    carts[userId] = [];
+    // Create a payment record in payments table
+    const pStatusDetail = pStatus === 'Paid' ? 'Completed' : (pStatus === 'Failed' ? 'Failed' : 'Pending');
+    await db.execute({
+      sql: `INSERT INTO payments (order_id, user_id, amount, payment_method, status, transaction_id)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [newOrderId, userId, grandTotal, paymentMethod || 'Stripe', pStatusDetail, txnId]
+    });
+
+    // Empty the user's cart in DB
+    await db.execute({
+      sql: "DELETE FROM cart WHERE user_id = ?",
+      args: [userId]
+    });
+
+    // Fetch full order to return
+    const orderList = await getOrderDetails("id = ?", [newOrderId]);
 
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      order: newOrder
+      order: orderList[0]
     });
   } catch (error) {
     next(error);
@@ -116,9 +152,9 @@ export const getOrders = async (req, res, next) => {
     let userOrders = [];
 
     if (userRole === 'admin') {
-      userOrders = [...orders];
+      userOrders = await getOrderDetails("1=1");
     } else {
-      userOrders = orders.filter(o => o.userId === userId);
+      userOrders = await getOrderDetails("user_id = ?", [userId]);
     }
 
     res.json({
@@ -139,7 +175,8 @@ export const getOrders = async (req, res, next) => {
 export const getOrderById = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id);
-    const order = orders.find(o => o.id === orderId);
+    const orderList = await getOrderDetails("id = ?", [orderId]);
+    const order = orderList[0];
 
     if (!order) {
       res.status(404);
@@ -177,30 +214,68 @@ export const updateOrderStatus = async (req, res, next) => {
       throw new Error(`Please provide a valid status: ${allowedStatuses.join(', ')}`);
     }
 
-    const order = orders.find(o => o.id === orderId);
+    // Get order status
+    const orderResult = await db.execute({
+      sql: "SELECT id, status FROM orders WHERE id = ?",
+      args: [orderId]
+    });
 
-    if (!order) {
+    const currentOrder = orderResult.rows[0];
+    if (!currentOrder) {
       res.status(404);
       throw new Error(`Order with ID ${req.params.id} not found`);
     }
 
-    // If order was cancelled and is now being marked back to something else, or vice-versa, handle stock.
     // Specifically, if shifting to Cancelled, restore stock.
-    if (status === 'Cancelled' && order.status !== 'Cancelled') {
-      for (const item of order.items) {
-        const product = products.find(p => p.id === item.productId);
+    if (status === 'Cancelled' && currentOrder.status !== 'Cancelled') {
+      const itemsResult = await db.execute({
+        sql: "SELECT product_id, name, quantity FROM order_items WHERE order_id = ?",
+        args: [orderId]
+      });
+
+      for (const item of itemsResult.rows) {
+        const prodResult = await db.execute({
+          sql: "SELECT stock, name FROM products WHERE id = ?",
+          args: [item.product_id]
+        });
+
+        const product = prodResult.rows[0];
         if (product) {
-          product.stock += item.quantity;
+          const newStock = product.stock + item.quantity;
+          await db.execute({
+            sql: "UPDATE products SET stock = ? WHERE id = ?",
+            args: [newStock, item.product_id]
+          });
+
+          // Log inventory cancellation return
+          await db.execute({
+            sql: `INSERT INTO inventory_logs (product_id, product_name, activity_type, quantity_change, remaining_stock, performed_by)
+                  VALUES (?, ?, ?, ?, ?, ?)`,
+            args: [
+              item.product_id,
+              product.name,
+              "Order Cancellation Return",
+              item.quantity,
+              newStock,
+              req.user?.name || "Admin"
+            ]
+          });
         }
       }
     }
 
-    order.status = status;
+    // Update order status
+    await db.execute({
+      sql: "UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [status, orderId]
+    });
+
+    const orderList = await getOrderDetails("id = ?", [orderId]);
 
     res.json({
       success: true,
       message: `Order status updated to ${status} successfully`,
-      order
+      order: orderList[0]
     });
   } catch (error) {
     next(error);
@@ -215,44 +290,83 @@ export const updateOrderStatus = async (req, res, next) => {
 export const cancelOrder = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.id);
-    const order = orders.find(o => o.id === orderId);
 
-    if (!order) {
+    const orderResult = await db.execute({
+      sql: "SELECT id, status, user_id FROM orders WHERE id = ?",
+      args: [orderId]
+    });
+
+    const currentOrder = orderResult.rows[0];
+    if (!currentOrder) {
       res.status(404);
       throw new Error(`Order with ID ${req.params.id} not found`);
     }
 
     // Access control: only owner or admin can cancel
-    if (order.userId !== req.user.id && req.user.role !== 'admin') {
+    if (currentOrder.user_id !== req.user.id && req.user.role !== 'admin') {
       res.status(403);
       throw new Error('Not authorized to cancel this order');
     }
 
     // Order can only be cancelled if it hasn't been shipped or delivered
-    if (order.status === 'Shipped' || order.status === 'Delivered') {
+    if (currentOrder.status === 'Shipped' || currentOrder.status === 'Delivered') {
       res.status(400);
-      throw new Error(`Cannot cancel order. It has already been ${order.status.toLowerCase()}`);
+      throw new Error(`Cannot cancel order. It has already been ${currentOrder.status.toLowerCase()}`);
     }
 
-    if (order.status === 'Cancelled') {
+    if (currentOrder.status === 'Cancelled') {
       res.status(400);
       throw new Error('Order is already cancelled');
     }
 
     // Restore stock back to products
-    for (const item of order.items) {
-      const product = products.find(p => p.id === item.productId);
+    const itemsResult = await db.execute({
+      sql: "SELECT product_id, name, quantity FROM order_items WHERE order_id = ?",
+      args: [orderId]
+    });
+
+    for (const item of itemsResult.rows) {
+      const prodResult = await db.execute({
+        sql: "SELECT stock, name FROM products WHERE id = ?",
+        args: [item.product_id]
+      });
+
+      const product = prodResult.rows[0];
       if (product) {
-        product.stock += item.quantity;
+        const newStock = product.stock + item.quantity;
+        await db.execute({
+          sql: "UPDATE products SET stock = ? WHERE id = ?",
+          args: [newStock, item.product_id]
+        });
+
+        // Log cancellation return
+        await db.execute({
+          sql: `INSERT INTO inventory_logs (product_id, product_name, activity_type, quantity_change, remaining_stock, performed_by)
+                VALUES (?, ?, ?, ?, ?, ?)`,
+          args: [
+            item.product_id,
+            product.name,
+            "Order Cancellation Return",
+            item.quantity,
+            newStock,
+            req.user?.name || "Shopper"
+          ]
+        });
       }
     }
 
-    order.status = 'Cancelled';
+    // Cancel the order
+    await db.execute({
+      sql: "UPDATE orders SET status = 'Cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [orderId]
+    });
+
+    const orderList = await getOrderDetails("id = ?", [orderId]);
 
     res.json({
       success: true,
       message: 'Order cancelled successfully',
-      order
+      order: orderList[0]
     });
   } catch (error) {
     next(error);
