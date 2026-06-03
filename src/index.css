@@ -2,11 +2,11 @@
 
 :root {
   /* Color Palette */
-  --primary-color: #2563EB;     /* Royal Blue */
-  --primary-hover: #1D4ED8;
-  --secondary-color: #7C3AED;   /* Purple */
-  --secondary-hover: #6D28D9;
-  --accent-color: #F59E0B;      /* Golden Yellow */
+  --primary-color: #4F46E5;     /* Indigo */
+  --primary-hover: #4338CA;
+  --secondary-color: #06B6D4;   /* Cyan */
+  --secondary-hover: #0891B2;
+  --accent-color: #F59E0B;      /* Amber */
   --accent-hover: #D97706;
   
   /* Layout Colors */

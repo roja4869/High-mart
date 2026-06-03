@@ -42,7 +42,7 @@
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
   border-radius: 10px;
   color: var(--text-light);
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
 }
 
 .navbar-logo span {
@@ -77,9 +77,9 @@
 }
 
 .navbar-search input:focus {
-  border-color: rgba(124, 58, 237, 0.4);
+  border-color: var(--primary-color);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 10px rgba(124, 58, 237, 0.15);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.15);
 }
 
 .navbar-search button {
@@ -218,7 +218,7 @@
   justify-content: center;
   font-weight: bold;
   font-size: 14px;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
 }
 
 .profile-name {
@@ -302,14 +302,14 @@
   font-weight: 600;
   padding: 8px 20px;
   border-radius: 20px;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
   transition: var(--transition-smooth);
 }
 
 .login-nav-btn:hover {
   transform: translateY(-1px);
   background: var(--primary-hover);
-  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 6px 15px rgba(79, 70, 229, 0.3);
 }
 
 .mobile-menu-btn {
