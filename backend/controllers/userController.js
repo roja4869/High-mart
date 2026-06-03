@@ -1,4 +1,4 @@
-import { users } from '../data/mockDb.js';
+import { db } from '../data/db.js';
 
 /**
  * @desc    Get all users
@@ -7,16 +7,12 @@ import { users } from '../data/mockDb.js';
  */
 export const getUsers = async (req, res, next) => {
   try {
-    // Exclude password in response
-    const usersWithoutPassword = users.map(user => {
-      const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
-    });
+    const result = await db.execute("SELECT id, name, email, role, created_at FROM users");
 
     res.json({
       success: true,
-      count: usersWithoutPassword.length,
-      users: usersWithoutPassword
+      count: result.rows.length,
+      users: result.rows
     });
   } catch (error) {
     next(error);
@@ -31,15 +27,20 @@ export const getUsers = async (req, res, next) => {
 export const updateUser = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    const userIndex = users.findIndex(u => u.id === id);
 
-    if (userIndex === -1) {
+    // Get current user details from DB
+    const checkResult = await db.execute({
+      sql: "SELECT id, name, email, role FROM users WHERE id = ?",
+      args: [id]
+    });
+
+    const currentUser = checkResult.rows[0];
+    if (!currentUser) {
       res.status(404);
       throw new Error(`User with ID ${req.params.id} not found`);
     }
 
     const { name, email, role } = req.body;
-    const currentUser = users[userIndex];
 
     // Prevent admin from demoting themselves to maintain at least one admin
     if (id === req.user.id && role && role !== 'admin') {
@@ -47,21 +48,26 @@ export const updateUser = async (req, res, next) => {
       throw new Error('You cannot change your own admin privileges.');
     }
 
-    const updatedUser = {
-      ...currentUser,
-      name: name !== undefined ? name : currentUser.name,
-      email: email !== undefined ? email.toLowerCase() : currentUser.email,
-      role: role !== undefined ? role : currentUser.role
-    };
+    const updatedName = name !== undefined ? name : currentUser.name;
+    const updatedEmail = email !== undefined ? email.toLowerCase() : currentUser.email;
+    const updatedRole = role !== undefined ? role : currentUser.role;
 
-    users[userIndex] = updatedUser;
+    // Update user in DB
+    await db.execute({
+      sql: "UPDATE users SET name = ?, email = ?, role = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [updatedName, updatedEmail, updatedRole, id]
+    });
 
-    const { password, ...userWithoutPassword } = updatedUser;
+    // Fetch updated user to return
+    const finalResult = await db.execute({
+      sql: "SELECT id, name, email, role, created_at FROM users WHERE id = ?",
+      args: [id]
+    });
 
     res.json({
       success: true,
       message: 'User details updated successfully',
-      user: userWithoutPassword
+      user: finalResult.rows[0]
     });
   } catch (error) {
     next(error);
@@ -76,9 +82,14 @@ export const updateUser = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    const userIndex = users.findIndex(u => u.id === id);
 
-    if (userIndex === -1) {
+    // Get user
+    const checkResult = await db.execute({
+      sql: "SELECT id FROM users WHERE id = ?",
+      args: [id]
+    });
+
+    if (checkResult.rows.length === 0) {
       res.status(404);
       throw new Error(`User with ID ${req.params.id} not found`);
     }
@@ -89,7 +100,11 @@ export const deleteUser = async (req, res, next) => {
       throw new Error('You cannot delete your own admin account.');
     }
 
-    users.splice(userIndex, 1);
+    // Delete user from DB
+    await db.execute({
+      sql: "DELETE FROM users WHERE id = ?",
+      args: [id]
+    });
 
     res.json({
       success: true,

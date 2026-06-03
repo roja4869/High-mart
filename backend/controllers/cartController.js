@@ -1,4 +1,18 @@
-import { carts, products } from '../data/mockDb.js';
+import { db } from '../data/db.js';
+
+// Helper to get user's cart items from DB in standard format
+const getUserCart = async (userId) => {
+  const result = await db.execute({
+    sql: `
+      SELECT c.product_id as productId, p.name, p.price, p.image, c.quantity 
+      FROM cart c 
+      JOIN products p ON c.product_id = p.id 
+      WHERE c.user_id = ?
+    `,
+    args: [userId]
+  });
+  return result.rows;
+};
 
 /**
  * @desc    Get user's cart
@@ -8,15 +22,11 @@ import { carts, products } from '../data/mockDb.js';
 export const getCart = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    const cart = await getUserCart(userId);
     
-    // Initialize cart if not exists
-    if (!carts[userId]) {
-      carts[userId] = [];
-    }
-
     res.json({
       success: true,
-      cart: carts[userId]
+      cart
     });
   } catch (error) {
     next(error);
@@ -47,22 +57,25 @@ export const addToCart = async (req, res, next) => {
     }
 
     // Find product in DB
-    const product = products.find(p => p.id === prodIdNum);
+    const prodResult = await db.execute({
+      sql: "SELECT stock, name FROM products WHERE id = ?",
+      args: [prodIdNum]
+    });
+    
+    const product = prodResult.rows[0];
     if (!product) {
       res.status(404);
       throw new Error(`Product with ID ${productId} not found`);
     }
 
-    // Initialize cart if not exists
-    if (!carts[userId]) {
-      carts[userId] = [];
-    }
+    // Get existing item quantity in user cart
+    const cartItemResult = await db.execute({
+      sql: "SELECT quantity FROM cart WHERE user_id = ? AND product_id = ?",
+      args: [userId, prodIdNum]
+    });
 
-    const userCart = carts[userId];
-    const existingItemIndex = userCart.findIndex(item => item.productId === prodIdNum);
-
-    // Calculate total quantity needed
-    const targetQty = existingItemIndex > -1 ? userCart[existingItemIndex].quantity + qtyNum : qtyNum;
+    const existingQty = cartItemResult.rows.length > 0 ? cartItemResult.rows[0].quantity : 0;
+    const targetQty = existingQty + qtyNum;
 
     // Check stock
     if (product.stock < targetQty) {
@@ -70,24 +83,26 @@ export const addToCart = async (req, res, next) => {
       throw new Error(`Insufficient stock. Only ${product.stock} items available`);
     }
 
-    if (existingItemIndex > -1) {
+    if (existingQty > 0) {
       // Update quantity
-      userCart[existingItemIndex].quantity = targetQty;
+      await db.execute({
+        sql: "UPDATE cart SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?",
+        args: [targetQty, userId, prodIdNum]
+      });
     } else {
       // Add new cart item
-      userCart.push({
-        productId: prodIdNum,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        quantity: qtyNum
+      await db.execute({
+        sql: "INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)",
+        args: [userId, prodIdNum, qtyNum]
       });
     }
+
+    const updatedCart = await getUserCart(userId);
 
     res.json({
       success: true,
       message: 'Item added to cart successfully',
-      cart: userCart
+      cart: updatedCart
     });
   } catch (error) {
     next(error);
@@ -112,8 +127,13 @@ export const updateCartQuantity = async (req, res, next) => {
 
     const qtyNum = parseInt(quantity);
 
-    // Verify product exists in store for stock comparison
-    const product = products.find(p => p.id === productId);
+    // Verify product exists in DB for stock comparison
+    const prodResult = await db.execute({
+      sql: "SELECT stock FROM products WHERE id = ?",
+      args: [productId]
+    });
+    
+    const product = prodResult.rows[0];
     if (!product) {
       res.status(404);
       throw new Error(`Product with ID ${productId} not found`);
@@ -125,26 +145,29 @@ export const updateCartQuantity = async (req, res, next) => {
       throw new Error(`Insufficient stock. Only ${product.stock} items available`);
     }
 
-    // Initialize cart if not exists
-    if (!carts[userId]) {
-      carts[userId] = [];
-    }
+    // Verify item is already in user's cart
+    const checkResult = await db.execute({
+      sql: "SELECT id FROM cart WHERE user_id = ? AND product_id = ?",
+      args: [userId, productId]
+    });
 
-    const userCart = carts[userId];
-    const itemIndex = userCart.findIndex(item => item.productId === productId);
-
-    if (itemIndex === -1) {
+    if (checkResult.rows.length === 0) {
       res.status(404);
       throw new Error(`Product ID ${productId} is not in your cart`);
     }
 
-    // Update quantity
-    userCart[itemIndex].quantity = qtyNum;
+    // Update quantity in DB
+    await db.execute({
+      sql: "UPDATE cart SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND product_id = ?",
+      args: [qtyNum, userId, productId]
+    });
+
+    const updatedCart = await getUserCart(userId);
 
     res.json({
       success: true,
       message: 'Cart quantity updated successfully',
-      cart: userCart
+      cart: updatedCart
     });
   } catch (error) {
     next(error);
@@ -161,25 +184,29 @@ export const removeFromCart = async (req, res, next) => {
     const userId = req.user.id;
     const productId = parseInt(req.params.id);
 
-    if (!carts[userId]) {
-      carts[userId] = [];
-    }
+    // Verify item is in cart
+    const checkResult = await db.execute({
+      sql: "SELECT id FROM cart WHERE user_id = ? AND product_id = ?",
+      args: [userId, productId]
+    });
 
-    const userCart = carts[userId];
-    const itemIndex = userCart.findIndex(item => item.productId === productId);
-
-    if (itemIndex === -1) {
+    if (checkResult.rows.length === 0) {
       res.status(404);
       throw new Error(`Product ID ${productId} is not in your cart`);
     }
 
-    // Remove item from cart array
-    userCart.splice(itemIndex, 1);
+    // Delete item from cart DB
+    await db.execute({
+      sql: "DELETE FROM cart WHERE user_id = ? AND product_id = ?",
+      args: [userId, productId]
+    });
+
+    const updatedCart = await getUserCart(userId);
 
     res.json({
       success: true,
       message: 'Product removed from cart successfully',
-      cart: userCart
+      cart: updatedCart
     });
   } catch (error) {
     next(error);

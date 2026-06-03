@@ -1,4 +1,4 @@
-import { products, inventoryLogs } from '../data/mockDb.js';
+import { db } from '../data/db.js';
 
 /**
  * @desc    Get all products
@@ -8,28 +8,34 @@ import { products, inventoryLogs } from '../data/mockDb.js';
 export const getProducts = async (req, res, next) => {
   try {
     const { category, search } = req.query;
-    let filteredProducts = [...products];
+    
+    let sql = `
+      SELECT p.*, c.name as category 
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE 1=1
+    `;
+    const args = [];
 
-    // Filter by category
+    // Filter by category name
     if (category) {
-      filteredProducts = filteredProducts.filter(
-        p => p.category.toLowerCase() === category.toLowerCase()
-      );
+      sql += ` AND LOWER(c.name) = ?`;
+      args.push(category.toLowerCase());
     }
 
     // Search by name or description
     if (search) {
-      const searchLower = search.toLowerCase();
-      filteredProducts = filteredProducts.filter(
-        p => p.name.toLowerCase().includes(searchLower) || 
-             p.description.toLowerCase().includes(searchLower)
-      );
+      sql += ` AND (LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ?)`;
+      const searchPattern = `%${search.toLowerCase()}%`;
+      args.push(searchPattern, searchPattern);
     }
+
+    const result = await db.execute({ sql, args });
 
     res.json({
       success: true,
-      count: filteredProducts.length,
-      products: filteredProducts
+      count: result.rows.length,
+      products: result.rows
     });
   } catch (error) {
     next(error);
@@ -44,7 +50,18 @@ export const getProducts = async (req, res, next) => {
 export const getProductById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    const product = products.find(p => p.id === id);
+    
+    const result = await db.execute({
+      sql: `
+        SELECT p.*, c.name as category 
+        FROM products p 
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ?
+      `,
+      args: [id]
+    });
+
+    const product = result.rows[0];
 
     if (!product) {
       res.status(404);
@@ -87,25 +104,64 @@ export const createProduct = async (req, res, next) => {
       throw new Error('Product stock must be a non-negative integer');
     }
 
+    // Resolve category ID
+    let categoryResult = await db.execute({
+      sql: "SELECT id FROM categories WHERE LOWER(name) = ?",
+      args: [category.toLowerCase()]
+    });
+
+    let categoryId;
+    if (categoryResult.rows.length > 0) {
+      categoryId = categoryResult.rows[0].id;
+    } else {
+      // Create new category if it doesn't exist
+      const newCatResult = await db.execute({
+        sql: "INSERT INTO categories (name, description) VALUES (?, ?) RETURNING id",
+        args: [category, `${category} category products`]
+      });
+      categoryId = newCatResult.rows[0].id;
+    }
+
     // Handle image file name
     const image = req.file ? req.file.filename : 'default_product.jpg';
 
-    const newProduct = {
-      id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
-      name,
-      description: description || '',
-      price: priceNum,
-      category,
-      image,
-      stock: stockNum
-    };
+    // Insert Product
+    const insertResult = await db.execute({
+      sql: `
+        INSERT INTO products (name, description, price, category_id, image, stock)
+        VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+      `,
+      args: [name, description || '', priceNum, categoryId, image, stockNum]
+    });
 
-    products.push(newProduct);
+    const newProductId = insertResult.rows[0].id;
+
+    // Log the initial stock inbound
+    if (stockNum > 0) {
+      await db.execute({
+        sql: `
+          INSERT INTO inventory_logs (product_id, product_name, activity_type, quantity_change, remaining_stock, performed_by)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        args: [newProductId, name, "Stock Inbound", stockNum, stockNum, req.user ? req.user.name : "Admin"]
+      });
+    }
+
+    // Fetch full new product with category
+    const finalResult = await db.execute({
+      sql: `
+        SELECT p.*, c.name as category 
+        FROM products p 
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ?
+      `,
+      args: [newProductId]
+    });
 
     res.status(201).json({
       success: true,
       message: 'Product created successfully',
-      product: newProduct
+      product: finalResult.rows[0]
     });
   } catch (error) {
     next(error);
@@ -120,35 +176,56 @@ export const createProduct = async (req, res, next) => {
 export const updateProduct = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    const productIndex = products.findIndex(p => p.id === id);
 
-    if (productIndex === -1) {
+    // Get current product
+    const currentResult = await db.execute({
+      sql: "SELECT * FROM products WHERE id = ?",
+      args: [id]
+    });
+
+    const currentProduct = currentResult.rows[0];
+    if (!currentProduct) {
       res.status(404);
       throw new Error(`Product with ID ${req.params.id} not found`);
     }
 
     const { name, description, price, category, stock } = req.body;
-    const currentProduct = products[productIndex];
 
-    // Build updated fields
-    const updatedProduct = {
-      ...currentProduct,
-      name: name !== undefined ? name : currentProduct.name,
-      description: description !== undefined ? description : currentProduct.description,
-      category: category !== undefined ? category : currentProduct.category
-    };
+    let categoryId = currentProduct.category_id;
+    if (category !== undefined) {
+      // Resolve category ID
+      let categoryResult = await db.execute({
+        sql: "SELECT id FROM categories WHERE LOWER(name) = ?",
+        args: [category.toLowerCase()]
+      });
 
+      if (categoryResult.rows.length > 0) {
+        categoryId = categoryResult.rows[0].id;
+      } else {
+        // Create new category if it doesn't exist
+        const newCatResult = await db.execute({
+          sql: "INSERT INTO categories (name, description) VALUES (?, ?) RETURNING id",
+          args: [category, `${category} category products`]
+        });
+        categoryId = newCatResult.rows[0].id;
+      }
+    }
+
+    const updatedName = name !== undefined ? name : currentProduct.name;
+    const updatedDesc = description !== undefined ? description : currentProduct.description;
+    
+    let priceNum = currentProduct.price;
     if (price !== undefined) {
-      const priceNum = parseFloat(price);
+      priceNum = parseFloat(price);
       if (isNaN(priceNum) || priceNum <= 0) {
         res.status(400);
         throw new Error('Product price must be a valid positive number');
       }
-      updatedProduct.price = priceNum;
     }
 
+    let stockNum = currentProduct.stock;
     if (stock !== undefined) {
-      const stockNum = parseInt(stock);
+      stockNum = parseInt(stock);
       if (isNaN(stockNum) || stockNum < 0) {
         res.status(400);
         throw new Error('Product stock must be a non-negative integer');
@@ -156,32 +233,44 @@ export const updateProduct = async (req, res, next) => {
       
       const stockDelta = stockNum - currentProduct.stock;
       if (stockDelta !== 0) {
-        inventoryLogs.push({
-          id: inventoryLogs.length > 0 ? Math.max(...inventoryLogs.map(l => l.id)) + 1 : 1,
-          productId: currentProduct.id,
-          productName: currentProduct.name,
-          activityType: "Stock Adjustment",
-          quantityChange: stockDelta,
-          remainingStock: stockNum,
-          performedBy: req.user ? req.user.name : "Admin",
-          timestamp: new Date().toISOString()
+        await db.execute({
+          sql: `
+            INSERT INTO inventory_logs (product_id, product_name, activity_type, quantity_change, remaining_stock, performed_by)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `,
+          args: [currentProduct.id, updatedName, "Stock Adjustment", stockDelta, stockNum, req.user ? req.user.name : "Admin"]
         });
       }
-      updatedProduct.stock = stockNum;
     }
 
     // If new image is uploaded, use it
-    if (req.file) {
-      updatedProduct.image = req.file.filename;
-    }
+    const updatedImage = req.file ? req.file.filename : currentProduct.image;
 
-    // Save updated product back to mock store
-    products[productIndex] = updatedProduct;
+    // Perform Update
+    await db.execute({
+      sql: `
+        UPDATE products 
+        SET name = ?, description = ?, price = ?, category_id = ?, image = ?, stock = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+      args: [updatedName, updatedDesc, priceNum, categoryId, updatedImage, stockNum, id]
+    });
+
+    // Fetch updated product with category
+    const finalResult = await db.execute({
+      sql: `
+        SELECT p.*, c.name as category 
+        FROM products p 
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ?
+      `,
+      args: [id]
+    });
 
     res.json({
       success: true,
       message: 'Product updated successfully',
-      product: updatedProduct
+      product: finalResult.rows[0]
     });
   } catch (error) {
     next(error);
@@ -196,15 +285,22 @@ export const updateProduct = async (req, res, next) => {
 export const deleteProduct = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
-    const productIndex = products.findIndex(p => p.id === id);
 
-    if (productIndex === -1) {
+    const checkResult = await db.execute({
+      sql: "SELECT id FROM products WHERE id = ?",
+      args: [id]
+    });
+
+    if (checkResult.rows.length === 0) {
       res.status(404);
       throw new Error(`Product with ID ${req.params.id} not found`);
     }
 
-    // Remove from array
-    products.splice(productIndex, 1);
+    // Delete Product
+    await db.execute({
+      sql: "DELETE FROM products WHERE id = ?",
+      args: [id]
+    });
 
     res.json({
       success: true,

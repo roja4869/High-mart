@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { users } from '../data/mockDb.js';
+import { db } from '../data/db.js';
 
 // Generate JWT token helper
 const generateToken = (id) => {
@@ -32,8 +32,12 @@ export const register = async (req, res, next) => {
     }
 
     // Check if user already exists
-    const userExists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (userExists) {
+    const checkUser = await db.execute({
+      sql: "SELECT id FROM users WHERE email = ?",
+      args: [email.toLowerCase()]
+    });
+    
+    if (checkUser.rows.length > 0) {
       res.status(400);
       throw new Error('User already exists with this email address');
     }
@@ -43,24 +47,17 @@ export const register = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
-    const newUser = {
-      id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
-      name,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      role: 'user' // Default role
-    };
+    const result = await db.execute({
+      sql: "INSERT INTO users (name, email, password) VALUES (?, ?, ?) RETURNING id, name, email, role",
+      args: [name, email.toLowerCase(), hashedPassword]
+    });
 
-    // Save to mock database
-    users.push(newUser);
-
-    // Exclude password in response
-    const { password: _, ...userWithoutPassword } = newUser;
+    const newUser = result.rows[0];
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      user: userWithoutPassword
+      user: newUser
     });
   } catch (error) {
     next(error);
@@ -82,7 +79,12 @@ export const login = async (req, res, next) => {
     }
 
     // Find user
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const result = await db.execute({
+      sql: "SELECT id, name, email, password, role FROM users WHERE email = ?",
+      args: [email.toLowerCase()]
+    });
+
+    const user = result.rows[0];
 
     if (user && (await bcrypt.compare(password, user.password))) {
       const { password: _, ...userWithoutPassword } = user;
