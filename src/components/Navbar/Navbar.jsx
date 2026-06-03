@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { AppContext } from '../App';
-import { authService } from '../services/authService';
+import { AppContext } from '../../App';
+import { authService } from '../../services/authService';
 import { ShoppingCart, Heart, Search, User, LogOut, Sun, Moon, ShoppingBag, Menu, X, Shield } from 'lucide-react';
 import './Navbar.css';
 
@@ -128,11 +128,19 @@ const Navbar = () => {
                   </div>
                   <hr className="dropdown-divider" />
                   <Link 
-                    to="/dashboard" 
+                    to="/profile" 
                     onClick={() => setShowProfileDropdown(false)} 
                     className="dropdown-item"
                   >
                     <User size={16} />
+                    <span>My Profile</span>
+                  </Link>
+                  <Link 
+                    to="/dashboard" 
+                    onClick={() => setShowProfileDropdown(false)} 
+                    className="dropdown-item"
+                  >
+                    <ShoppingCart size={16} />
                     <span>My Dashboard</span>
                   </Link>
                   {currentUser?.role === 'admin' && (
@@ -198,6 +206,9 @@ const Navbar = () => {
             </li>
             {isAuth ? (
               <>
+                <li>
+                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>My Profile</Link>
+                </li>
                 <li>
                   <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>My Dashboard</Link>
                 </li>
