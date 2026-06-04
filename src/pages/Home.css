@@ -129,7 +129,7 @@
   width: 100%;
   max-width: 520px;
   object-fit: contain;
-  filter: drop-shadow(0 15px 25px rgba(37, 99, 235, 0.15));
+  /* filter: drop-shadow(0 15px 25px rgba(37, 99, 235, 0.15)); */
 }
 
 /* Floating background icons */
@@ -549,7 +549,7 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  height: 42px;
+  height: 2.8em;
 }
 
 .product-rating-stars {

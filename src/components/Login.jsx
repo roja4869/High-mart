@@ -16,11 +16,11 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [shakeCard, setShakeCard] = useState(false);
-
+ 
   // Error States
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-
+ 
   // Check Remembered Email on Mount
   useEffect(() => {
     const savedEmail = localStorage.getItem('highMartRememberedEmail');
@@ -29,19 +29,19 @@ const Login = () => {
       setRememberMe(true);
     }
   }, []);
-
+ 
   const validateEmail = (emailStr) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr.toLowerCase().trim());
   };
-
+ 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     let isValid = true;
-
+ 
     // Reset Errors
     setEmailError('');
     setPasswordError('');
-
+ 
     // Email checks
     if (!email.trim()) {
       setEmailError('Email address is required.');
@@ -50,7 +50,7 @@ const Login = () => {
       setEmailError('Please enter a valid email address.');
       isValid = false;
     }
-
+ 
     // Password checks
     if (!password) {
       setPasswordError('Password is required.');
@@ -59,14 +59,14 @@ const Login = () => {
       setPasswordError('Password must be at least 6 characters.');
       isValid = false;
     }
-
+ 
     if (!isValid) {
       addToast('Please resolve validation errors.', 'error');
       setShakeCard(true);
       setTimeout(() => setShakeCard(false), 450);
       return;
     }
-
+ 
     // Attempt Login
     setIsLoading(true);
     try {
@@ -99,6 +99,35 @@ const Login = () => {
       addToast(err.message || 'Invalid email or password.', 'error');
       setShakeCard(true);
       setTimeout(() => setShakeCard(false), 450);
+    }
+  };
+ 
+  // Quick Demo Access Login
+  const handleQuickLogin = async (roleType) => {
+    setIsLoading(true);
+    try {
+      const emailVal = roleType === 'admin' ? 'admin@example.com' : 'jane@example.com';
+      const passVal = roleType === 'admin' ? 'admin123' : 'password123';
+      
+      const data = await authService.login(emailVal, passVal);
+      setUser(data.user);
+      addToast(data.message || 'Quick login successful!', 'success');
+      
+      if (syncCart) {
+        await syncCart();
+      }
+      
+      setTimeout(() => {
+        setIsLoading(false);
+        if (roleType === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 1000);
+    } catch (err) {
+      setIsLoading(false);
+      addToast(err.message || 'Demo login failed.', 'error');
     }
   };
 
@@ -272,6 +301,29 @@ const Login = () => {
                 </svg>
                 <span>Facebook</span>
               </button>
+            </div>
+
+            {/* Quick Demo Logins */}
+            <div className="demo-accounts-container">
+              <div className="demo-headline">Quick Demo Access</div>
+              <div className="demo-accounts-row">
+                <button 
+                  type="button" 
+                  onClick={() => handleQuickLogin('user')} 
+                  className="demo-login-btn user-demo-btn"
+                  disabled={isLoading}
+                >
+                  <span>Customer Portal</span>
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => handleQuickLogin('admin')} 
+                  className="demo-login-btn admin-demo-btn"
+                  disabled={isLoading}
+                >
+                  <span>Admin Panel</span>
+                </button>
+              </div>
             </div>
 
             <div className="login-card-foot">

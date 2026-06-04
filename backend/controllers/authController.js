@@ -16,7 +16,7 @@ const generateToken = (id) => {
  */
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, phone, password } = req.body;
 
     // Simple validation
     if (!name || !email || !password) {
@@ -48,8 +48,8 @@ export const register = async (req, res, next) => {
 
     // Create user
     const result = await db.execute({
-      sql: "INSERT INTO users (name, email, password) VALUES (?, ?, ?) RETURNING id, name, email, role",
-      args: [name, email.toLowerCase(), hashedPassword]
+      sql: "INSERT INTO users (name, email, phone, password) VALUES (?, ?, ?, ?) RETURNING id, name, email, phone, role",
+      args: [name, email.toLowerCase(), phone || null, hashedPassword]
     });
 
     const newUser = result.rows[0];
@@ -80,7 +80,7 @@ export const login = async (req, res, next) => {
 
     // Find user
     const result = await db.execute({
-      sql: "SELECT id, name, email, password, role FROM users WHERE email = ?",
+      sql: "SELECT id, name, email, phone, password, role FROM users WHERE email = ?",
       args: [email.toLowerCase()]
     });
 

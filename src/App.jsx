@@ -6,6 +6,7 @@ import Footer from './components/Footer/Footer';
 import { CartContext } from './context/CartContext';
 import { authService } from './services/authService';
 import { cartService } from './services/cartService';
+import { MOCK_PRODUCTS } from './services/productService';
 
 // Create Global App Context
 export const AppContext = createContext();
@@ -116,9 +117,13 @@ const App = () => {
       <AppContext.Provider value={{
         theme,
         toggleTheme,
+        user,
+        setUser,
+        logout,
         cart,
         addToCart,
         removeFromCart,
+        updateCartQuantity,
         clearCart,
         wishlist,
         setWishlist,

@@ -30,6 +30,7 @@ const Home = () => {
   const location = useLocation();
   const { addToCart, toggleWishlist, wishlist, addToast } = useContext(AppContext);
   const [productsList, setProductsList] = useState([]);
+  console.log("[RENDER] Home Component", location);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -61,18 +62,18 @@ const Home = () => {
     loadProducts();
   }, []);
 
-  useEffect(() => {
-    if (location.state?.scrollTo) {
-      const el = document.getElementById(location.state.scrollTo);
-      if (el) {
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      }
-      // Clear state so it doesn't re-scroll on refresh
-      window.history.replaceState({}, document.title);
-    }
-  }, [location]);
+  // useEffect(() => {
+  //   if (location.state?.scrollTo) {
+  //     const el = document.getElementById(location.state.scrollTo);
+  //     if (el) {
+  //       setTimeout(() => {
+  //         el.scrollIntoView({ behavior: 'smooth' });
+  //       }, 100);
+  //     }
+  //     // Clear state so it doesn't re-scroll on refresh
+  //     navigate(location.pathname, { replace: true, state: null });
+  //   }
+  // }, [location, navigate]);
 
   // 1. Flash Sale Timer (Hours, Minutes, Seconds)
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 34, seconds: 19 });
