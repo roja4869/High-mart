@@ -19,3 +19,5 @@ export const db = createClient({
   url: url || "file:local.db",
   authToken: authToken || ""
 });
+
+console.log("Turso Connected");

@@ -21,7 +21,7 @@
   --glass-bg: rgba(255, 255, 255, 0.45);
   --glass-border: rgba(255, 255, 255, 0.4);
   --glass-shadow: 0 15px 35px 0 rgba(15, 23, 42, 0.08);
-  --glass-blur: blur(12px) saturate(180%);
+  --glass-blur: none;
   
   /* Status Colors */
   --color-success: #10B981;
@@ -45,13 +45,15 @@
   --glass-bg: rgba(15, 23, 42, 0.5);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 15px 35px 0 rgba(0, 0, 0, 0.35);
-  --glass-blur: blur(20px) saturate(180%);
+  --glass-blur: none;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 html {

@@ -70,9 +70,9 @@ const Home = () => {
         }, 100);
       }
       // Clear state so it doesn't re-scroll on refresh
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true, state: null });
     }
-  }, [location]);
+  }, [location, navigate]);
 
   // 1. Flash Sale Timer (Hours, Minutes, Seconds)
   const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 34, seconds: 19 });
