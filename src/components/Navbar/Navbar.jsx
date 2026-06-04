@@ -9,6 +9,7 @@ const Navbar = () => {
   const { cart, wishlist, theme, toggleTheme, addToast } = useContext(AppContext);
   const navigate = useNavigate();
   const location = useLocation();
+  console.log("[RENDER] Navbar Component", location.pathname);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
