@@ -129,7 +129,7 @@ const Navbar = () => {
                   </div>
                   <hr className="dropdown-divider" />
                   <Link 
-                    to="/profile" 
+                    to={currentUser?.role === 'admin' ? "/admin" : "/profile"} 
                     onClick={() => setShowProfileDropdown(false)} 
                     className="dropdown-item"
                   >
@@ -137,7 +137,7 @@ const Navbar = () => {
                     <span>My Profile</span>
                   </Link>
                   <Link 
-                    to="/dashboard" 
+                    to={currentUser?.role === 'admin' ? "/admin" : "/dashboard"} 
                     onClick={() => setShowProfileDropdown(false)} 
                     className="dropdown-item"
                   >
@@ -208,10 +208,10 @@ const Navbar = () => {
             {isAuth ? (
               <>
                 <li>
-                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>My Profile</Link>
+                  <Link to={currentUser?.role === 'admin' ? "/admin" : "/profile"} onClick={() => setMobileMenuOpen(false)}>My Profile</Link>
                 </li>
                 <li>
-                  <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>My Dashboard</Link>
+                  <Link to={currentUser?.role === 'admin' ? "/admin" : "/dashboard"} onClick={() => setMobileMenuOpen(false)}>My Dashboard</Link>
                 </li>
                 {currentUser?.role === 'admin' && (
                   <li>

@@ -1,90 +1,66 @@
-import React from 'react';
-import { Star, Trash2, Bookmark, Plus, Minus } from 'lucide-react';
+import React, { useContext } from 'react';
+import { CartContext } from '../context/CartContext';
+import { Plus, Minus, Trash2 } from 'lucide-react';
+import './CartItem.css';
 
-const CartItem = ({ item, onIncrease, onDecrease, onRemove, onSaveLater }) => {
-  const itemTotalPrice = (item.price * (1 - item.discount / 100)) * item.quantity;
-  const itemUnitPrice = item.price * (1 - item.discount / 100);
+const CartItem = ({ item }) => {
+  const { updateQuantity, removeFromCart } = useContext(CartContext);
+
+  const unitPrice = item.price * (1 - (item.discount || 0) / 100);
+  const totalPrice = unitPrice * item.quantity;
 
   return (
-    <div className="cart-item-card">
-      {/* Image Box */}
-      <div className="cart-item-image-box">
-        <img src={item.image} alt={item.name} />
+    <div className="cart-item-wrapper glass-effect">
+      <div className="cart-item-img-box">
+        <img 
+          src={item.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'} 
+          alt={item.name} 
+          className="cart-item-img"
+        />
       </div>
 
-      {/* Info Details */}
-      <div className="cart-item-info">
-        <div className="cart-item-meta">
-          <span className="cart-item-category">{item.category}</span>
-          <h3 className="cart-item-name">{item.name}</h3>
-          
-          {/* Ratings */}
-          <div className="cart-item-rating">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star 
-                key={i} 
-                size={13} 
-                fill={i < Math.floor(item.rating) ? '#F59E0B' : 'none'} 
-                stroke="#F59E0B" 
-              />
-            ))}
-            <span>({item.rating})</span>
-          </div>
-        </div>
-
-        {/* Action Options */}
-        <div className="cart-item-actions">
-          <button onClick={() => onSaveLater(item.id)} className="cart-action-btn">
-            <Bookmark size={14} />
-            <span>Save for Later</span>
-          </button>
-          <button onClick={() => onRemove(item.id)} className="cart-action-btn remove-btn">
-            <Trash2 size={14} />
-            <span>Remove</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Controls & Price Column */}
-      <div className="cart-item-control-col">
-        <div className="cart-item-price-info">
+      <div className="cart-item-details">
+        <span className="cart-item-cat">{item.category}</span>
+        <h4 className="cart-item-title">{item.name}</h4>
+        
+        <div className="cart-item-unit-price">
+          <span>₹{unitPrice.toFixed(2)} each</span>
           {item.discount > 0 && (
-            <div className="cart-item-unit-price">
-              <span style={{ textDecoration: 'line-through', marginRight: '6px' }}>
-                ₹{item.price.toFixed(2)}
-              </span>
-              <span>₹{itemUnitPrice.toFixed(2)} each</span>
-            </div>
+            <span className="cart-item-strike">₹{item.price.toFixed(2)}</span>
           )}
-          {!item.discount && (
-            <div className="cart-item-unit-price">₹{item.price.toFixed(2)} each</div>
-          )}
-          <div className="cart-item-total-price">₹{itemTotalPrice.toFixed(2)}</div>
         </div>
+      </div>
 
-        {/* Quantity Selectors */}
-        <div className="cart-quantity-selector">
+      <div className="cart-item-controls-col">
+        {/* Quantity selectors */}
+        <div className="cart-item-qty-selector">
           <button 
-            onClick={() => onDecrease(item.id)} 
-            className="qty-control-btn"
+            onClick={() => updateQuantity(item.id, item.quantity - 1)} 
+            className="qty-btn"
             disabled={item.quantity <= 1}
             aria-label="Decrease quantity"
           >
             <Minus size={14} />
           </button>
-          <input 
-            type="text" 
-            className="qty-display-input" 
-            value={item.quantity} 
-            readOnly 
-            aria-label="Current quantity"
-          />
+          <span className="qty-value">{item.quantity}</span>
           <button 
-            onClick={() => onIncrease(item.id)} 
-            className="qty-control-btn"
+            onClick={() => updateQuantity(item.id, item.quantity + 1)} 
+            className="qty-btn"
             aria-label="Increase quantity"
           >
             <Plus size={14} />
+          </button>
+        </div>
+
+        {/* Pricing & remove row */}
+        <div className="cart-item-pricing-actions">
+          <span className="cart-item-total-price">₹{totalPrice.toFixed(2)}</span>
+          <button 
+            onClick={() => removeFromCart(item.id)} 
+            className="cart-item-remove-btn"
+            aria-label={`Remove ${item.name} from cart`}
+          >
+            <Trash2 size={16} />
           </button>
         </div>
       </div>

@@ -8,12 +8,13 @@ import CheckoutModal from '../srinivas/CheckoutModal';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { cart, wishlist, removeFromCart, clearCart, toggleWishlist, addToCart, addToast } = useContext(AppContext);
+  const { cart, wishlist, removeFromCart, clearCart, toggleWishlist, addToCart, addToast, setCurrentUser } = useContext(AppContext);
   const navigate = useNavigate();
   const currentUser = authService.getCurrentUser();
 
   const handleLogout = () => {
     authService.logout();
+    setCurrentUser(null);
     addToast('Logged out successfully.', 'info');
     navigate('/login');
   };

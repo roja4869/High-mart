@@ -2,7 +2,7 @@ import express from 'express';
 import { 
   createOrder, 
   getOrders, 
-  getOrderById, 
+  getOrdersOrOrderById, 
   updateOrderStatus, 
   cancelOrder 
 } from '../controllers/orderController.js';
@@ -18,7 +18,7 @@ router.route('/')
   .post(createOrder);
 
 router.route('/:id')
-  .get(getOrderById)
+  .get(getOrdersOrOrderById)
   .put(adminOnly, updateOrderStatus)
   .delete(cancelOrder);
 

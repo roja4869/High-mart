@@ -2,12 +2,14 @@ import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../App';
 import { paymentService } from './paymentService';
 import { authService } from '../services/authService';
+import { useNavigate } from 'react-router-dom';
 import { X, Lock, Shield, CheckCircle, HelpCircle, Info, CreditCard, DollarSign } from 'lucide-react';
 import './CheckoutModal.css';
 
 const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
   const { clearCart, addToast } = useContext(AppContext);
   const currentUser = authService.getCurrentUser() || { name: 'Jane Doe', email: 'jane@example.com' };
+  const navigate = useNavigate();
 
   // Form states
   const [shippingAddress, setShippingAddress] = useState('');
@@ -88,6 +90,13 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
     setCvc(value);
   };
 
+  const handleClose = () => {
+    onClose();
+    if (processingStep === 3) {
+      navigate('/profile', { state: { activeTab: 'orders' } });
+    }
+  };
+
   const handleSubmitCheckout = async (e) => {
     e.preventDefault();
 
@@ -133,6 +142,8 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
           transactionId,
           totalAmount: parseFloat(finalTotal.toFixed(2)),
           customerName: currentUser.name,
+          customerEmail: currentUser.email,
+          customerPhone: phone,
           items: cartItems
         });
 
@@ -171,6 +182,8 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
           transactionId,
           totalAmount: parseFloat(finalTotal.toFixed(2)),
           customerName: currentUser.name,
+          customerEmail: currentUser.email,
+          customerPhone: phone,
           items: cartItems
         });
 
@@ -199,6 +212,8 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
           transactionId: verification.transactionId,
           totalAmount: parseFloat(finalTotal.toFixed(2)),
           customerName: currentUser.name,
+          customerEmail: currentUser.email,
+          customerPhone: phone,
           items: cartItems
         });
 
@@ -226,7 +241,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
             <h2>Secure Checkout Gateway</h2>
           </div>
           {!isProcessing && (
-            <button className="close-btn" onClick={onClose} aria-label="Close Checkout">
+            <button className="close-btn" onClick={handleClose} aria-label="Close Checkout">
               <X size={20} />
             </button>
           )}
@@ -275,7 +290,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal }) => {
                     <strong>{paymentMethod === 'stripe' ? 'Stripe Secure Card' : paymentMethod === 'razorpay' ? 'Razorpay Express' : 'Cash on Delivery (COD)'}</strong>
                   </div>
                 </div>
-                <button className="checkout-success-continue-btn" onClick={onClose}>
+                <button className="checkout-success-continue-btn" onClick={handleClose}>
                   Return to Dashboard
                 </button>
               </div>

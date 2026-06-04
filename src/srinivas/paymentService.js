@@ -64,7 +64,12 @@ export const paymentService = {
         shippingAddress: orderData.shippingAddress,
         paymentMethod: orderData.paymentMethod,
         paymentStatus: orderData.paymentStatus || 'Paid',
-        transactionId: orderData.transactionId
+        transactionId: orderData.transactionId,
+        totalAmount: orderData.totalAmount,
+        customerName: orderData.customerName,
+        customerEmail: orderData.customerEmail,
+        customerPhone: orderData.customerPhone,
+        items: orderData.items
       });
       return response.data;
     } catch (err) {
