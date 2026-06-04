@@ -872,6 +872,54 @@
   box-shadow: none;
 }
 
+/* Flipkart-style quantity selector */
+.cart-qty-selector-flipkart {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid var(--primary-color);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-card);
+  height: 38px;
+  padding: 0 4px;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
+  min-width: 100px;
+}
+
+.qty-flipkart-btn {
+  background: transparent;
+  border: none;
+  color: var(--primary-color);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  font-weight: 800;
+  transition: var(--transition-smooth);
+}
+
+.qty-flipkart-btn:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--secondary-color);
+}
+
+.qty-flipkart-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.qty-flipkart-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  padding: 0 8px;
+  user-select: none;
+}
+
+
 /* ==========================================================================
    Pagination Component CSS
    ========================================================================== */

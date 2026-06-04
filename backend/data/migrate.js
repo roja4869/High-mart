@@ -80,8 +80,26 @@ async function runMigration() {
     for (const p of products) {
       const catId = categoryMap[p.category] || null;
       const result = await db.execute({
-        sql: "INSERT INTO products (id, name, description, price, category_id, image, stock) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id",
-        args: [p.id, p.name, p.description, p.price, catId, p.image, p.stock]
+        sql: `INSERT INTO products (id, name, description, price, category_id, image, stock, brand, discount, rating, reviewCount, sku, images, features, variants, specifications) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        args: [
+          p.id,
+          p.name,
+          p.description || '',
+          p.price,
+          catId,
+          p.image || (p.images && p.images[0]) || 'default_product.jpg',
+          p.stock || 0,
+          p.brand || '',
+          p.discount || 0,
+          p.rating || 0.0,
+          p.reviewCount || 0,
+          p.sku || '',
+          JSON.stringify(p.images || []),
+          JSON.stringify(p.features || []),
+          JSON.stringify(p.variants || {}),
+          JSON.stringify(p.specifications || {})
+        ]
       });
       const prodId = result.rows[0].id;
       productMap[p.id] = prodId;

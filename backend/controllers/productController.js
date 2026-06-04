@@ -1,5 +1,49 @@
 import { db } from '../data/db.js';
 
+// Helper to parse JSON string columns from SQLite/libSQL
+const formatProductRow = (row) => {
+  if (!row) return row;
+  const product = { ...row };
+  
+  try {
+    product.images = product.images ? JSON.parse(product.images) : [];
+  } catch (e) {
+    product.images = [];
+  }
+  try {
+    product.features = product.features ? JSON.parse(product.features) : [];
+  } catch (e) {
+    product.features = [];
+  }
+  try {
+    product.variants = product.variants ? JSON.parse(product.variants) : {};
+  } catch (e) {
+    product.variants = {};
+  }
+  try {
+    product.specifications = product.specifications ? JSON.parse(product.specifications) : {};
+  } catch (e) {
+    product.specifications = {};
+  }
+  
+  // Compute stockStatus and stockCount expected by the client
+  product.stockCount = product.stock;
+  if (product.stock <= 0) {
+    product.stockStatus = 'Out of Stock';
+  } else if (product.stock <= 5) {
+    product.stockStatus = 'Low Stock';
+  } else {
+    product.stockStatus = 'In Stock';
+  }
+
+  // Ensure there is at least one image in images array
+  if (!product.images || product.images.length === 0) {
+    product.images = [product.image ? (product.image.startsWith('http') ? product.image : `/uploads/${product.image}`) : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'];
+  }
+  
+  return product;
+};
+
 /**
  * @desc    Get all products
  * @route   GET /api/products
@@ -31,11 +75,12 @@ export const getProducts = async (req, res, next) => {
     }
 
     const result = await db.execute({ sql, args });
+    const formattedProducts = result.rows.map(row => formatProductRow(row));
 
     res.json({
       success: true,
-      count: result.rows.length,
-      products: result.rows
+      count: formattedProducts.length,
+      products: formattedProducts
     });
   } catch (error) {
     next(error);
@@ -70,7 +115,7 @@ export const getProductById = async (req, res, next) => {
 
     res.json({
       success: true,
-      product
+      product: formatProductRow(product)
     });
   } catch (error) {
     next(error);

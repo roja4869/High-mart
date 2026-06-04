@@ -5,11 +5,12 @@ import { Star, ShoppingCart, Heart, Eye } from 'lucide-react';
 import './ProductCard.css';
 
 const ProductCard = ({ product, onPreview }) => {
-  const { addToCart } = useContext(CartContext);
+  const { cart, addToCart, updateQuantity, removeFromCart } = useContext(CartContext);
   const { toggleWishlist, wishlist } = useContext(AppContext);
 
   const isWishlisted = wishlist.some(item => item.id === product.id);
   const finalPrice = product.price * (1 - (product.discountPercentage || 0) / 100);
+  const cartItem = cart.find(item => item.id === product.id);
 
   return (
     <div className="product-card-container glass-effect animate-fade-in">
@@ -89,13 +90,46 @@ const ProductCard = ({ product, onPreview }) => {
               <span className="price-old">₹{product.price.toFixed(2)}</span>
             )}
           </div>
-          <button 
-            onClick={() => addToCart(product)} 
-            className="product-add-cart-circle-btn"
-            aria-label={`Add ${product.name} to shopping cart`}
-          >
-            <ShoppingCart size={18} />
-          </button>
+          {cartItem ? (
+            <div className="product-qty-selector">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (cartItem.quantity <= 1) {
+                    removeFromCart(product.id);
+                  } else {
+                    updateQuantity(product.id, cartItem.quantity - 1);
+                  }
+                }} 
+                className="qty-adjust-btn"
+                aria-label="Decrease quantity"
+              >
+                -
+              </button>
+              <span className="qty-display">{cartItem.quantity}</span>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateQuantity(product.id, cartItem.quantity + 1);
+                }} 
+                className="qty-adjust-btn"
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(product);
+              }} 
+              className="product-add-cart-circle-btn"
+              aria-label={`Add ${product.name} to shopping cart`}
+            >
+              <ShoppingCart size={18} />
+            </button>
+          )}
         </div>
       </div>
     </div>

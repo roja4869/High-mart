@@ -4,14 +4,23 @@ import { db } from '../data/db.js';
 const getUserCart = async (userId) => {
   const result = await db.execute({
     sql: `
-      SELECT c.product_id as productId, p.name, p.price, p.image, c.quantity 
+      SELECT c.product_id as productId, p.name, p.price, p.image, c.quantity, p.discount, p.rating, c2.name as category, p.brand
       FROM cart c 
       JOIN products p ON c.product_id = p.id 
+      LEFT JOIN categories c2 ON p.category_id = c2.id
       WHERE c.user_id = ?
     `,
     args: [userId]
   });
-  return result.rows;
+  return result.rows.map(row => {
+    const isFullUrl = row.image && (row.image.startsWith('http://') || row.image.startsWith('https://'));
+    return {
+      ...row,
+      image: isFullUrl ? row.image : `/uploads/${row.image}`,
+      discount: row.discount || 0,
+      rating: row.rating || 0.0
+    };
+  });
 };
 
 /**
