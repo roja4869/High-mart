@@ -67,8 +67,8 @@ async function runMigration() {
     const userMap = {}; // mapping of old id -> new db id
     for (const u of users) {
       const result = await db.execute({
-        sql: "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?) RETURNING id",
-        args: [u.name, u.email, u.password, u.role]
+        sql: "INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, ?) RETURNING id",
+        args: [u.name, u.email, u.phone || null, u.password, u.role]
       });
       const userId = result.rows[0].id;
       userMap[u.id] = userId;

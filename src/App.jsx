@@ -5,6 +5,7 @@ import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
 import { authService } from './services/authService';
 import { cartService } from './services/cartService';
+import { MOCK_PRODUCTS } from './services/productService';
 
 // Create Global App Context
 export const AppContext = createContext();
@@ -70,7 +71,20 @@ const App = () => {
     }
   }, [theme]);
 
-  // 2. Cart & Wishlist State
+  // 2. User State
+  const [user, setUser] = useState(() => {
+    const local = localStorage.getItem('highMartUser');
+    return local ? JSON.parse(local) : null;
+  });
+
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+    setCart([]);
+    setWishlist([]);
+  };
+
+  // 3. Cart & Wishlist State
   const [cart, setCart] = useState([]);
 
   const [wishlist, setWishlist] = useState(() => {
@@ -78,13 +92,25 @@ const App = () => {
     return local ? JSON.parse(local) : [];
   });
 
+  const enrichCartItems = (backendCart) => {
+    return backendCart.map(item => {
+      const prod = MOCK_PRODUCTS.find(p => p.id === item.productId);
+      return {
+        ...item,
+        id: item.productId,
+        discount: prod ? prod.discount : 0,
+        category: prod ? prod.category : 'General',
+        rating: prod ? prod.rating : 4.5
+      };
+    });
+  };
+
   const syncCart = async () => {
     if (authService.isAuthenticated()) {
       try {
         const response = await cartService.getCart();
         if (response.success) {
-          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
-          setCart(mapped);
+          setCart(enrichCartItems(response.cart));
         }
       } catch (err) {
         console.warn("Could not sync cart with server:", err.message);
@@ -97,7 +123,7 @@ const App = () => {
 
   useEffect(() => {
     syncCart();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
@@ -115,8 +141,7 @@ const App = () => {
       try {
         const response = await cartService.addToCart(product.id, 1);
         if (response.success) {
-          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
-          setCart(mapped);
+          setCart(enrichCartItems(response.cart));
           addToast(`${product.name} added to cart.`, 'success');
         }
       } catch (error) {
@@ -141,8 +166,7 @@ const App = () => {
       try {
         const response = await cartService.removeFromCart(productId);
         if (response.success) {
-          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
-          setCart(mapped);
+          setCart(enrichCartItems(response.cart));
           addToast('Item removed from cart.', 'info');
         }
       } catch (error) {
@@ -156,6 +180,26 @@ const App = () => {
         }
         return prev.filter(item => item.id !== productId);
       });
+    }
+  };
+
+  const updateCartQuantity = async (productId, quantity) => {
+    if (authService.isAuthenticated()) {
+      try {
+        const response = await cartService.updateQuantity(productId, quantity);
+        if (response.success) {
+          setCart(enrichCartItems(response.cart));
+        }
+      } catch (error) {
+        const errMsg = error.response?.data?.error || error.message;
+        addToast(errMsg, 'error');
+      }
+    } else {
+      setCart(prev =>
+        prev.map(item =>
+          item.id === productId ? { ...item, quantity } : item
+        )
+      );
     }
   };
 
@@ -194,9 +238,13 @@ const App = () => {
       <AppContext.Provider value={{
         theme,
         toggleTheme,
+        user,
+        setUser,
+        logout,
         cart,
         addToCart,
         removeFromCart,
+        updateCartQuantity,
         clearCart,
         wishlist,
         setWishlist,

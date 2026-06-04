@@ -49,10 +49,16 @@ const VALID_COUPONS = {
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { addToast } = useContext(AppContext) || {};
+  const { 
+    cart, 
+    removeFromCart, 
+    updateCartQuantity, 
+    wishlist, 
+    toggleWishlist, 
+    addToast 
+  } = useContext(AppContext) || {};
 
-  // Local React State
-  const [cartItems, setCartItems] = useState(INITIAL_DUMMY_ITEMS);
+  const cartItems = cart || [];
   const [couponCode, setCouponCode] = useState('');
   const [couponStatus, setCouponStatus] = useState(null); // 'applied', 'error', null
   const [couponMessage, setCouponMessage] = useState('');
@@ -70,37 +76,37 @@ const Cart = () => {
 
   // State actions
   const handleIncreaseQuantity = (id) => {
-    setCartItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-      )
-    );
-    triggerNotification('Cart item quantity increased.');
+    const item = cartItems.find(item => item.id === id);
+    if (item) {
+      updateCartQuantity(id, item.quantity + 1);
+      triggerNotification('Cart item quantity increased.');
+    }
   };
 
   const handleDecreaseQuantity = (id) => {
-    setCartItems(prev =>
-      prev.map(item =>
-        item.id === id && item.quantity > 1
-          ? { ...item, quantity: item.quantity - 1 }
-          : item
-      )
-    );
-    triggerNotification('Cart item quantity decreased.', 'info');
+    const item = cartItems.find(item => item.id === id);
+    if (item && item.quantity > 1) {
+      updateCartQuantity(id, item.quantity - 1);
+      triggerNotification('Cart item quantity decreased.', 'info');
+    }
   };
 
   const handleRemoveItem = (id) => {
     const item = cartItems.find(i => i.id === id);
-    setCartItems(prev => prev.filter(item => item.id !== id));
     if (item) {
+      removeFromCart(id);
       triggerNotification(`${item.name} removed from shopping cart.`, 'info');
     }
   };
 
   const handleSaveForLater = (id) => {
     const item = cartItems.find(i => i.id === id);
-    setCartItems(prev => prev.filter(item => item.id !== id));
     if (item) {
+      const isAlreadyInWishlist = wishlist?.some(w => w.id === id);
+      if (!isAlreadyInWishlist && toggleWishlist) {
+        toggleWishlist(item);
+      }
+      removeFromCart(id);
       triggerNotification(`${item.name} saved for later purchases.`, 'success');
     }
   };
@@ -131,7 +137,8 @@ const Cart = () => {
   const totalItemsCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   
   const subtotal = cartItems.reduce((acc, item) => {
-    const discountedPrice = item.price * (1 - item.discount / 100);
+    const discount = item.discount || 0;
+    const discountedPrice = item.price * (1 - discount / 100);
     return acc + (discountedPrice * item.quantity);
   }, 0);
 

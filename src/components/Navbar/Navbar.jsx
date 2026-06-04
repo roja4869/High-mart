@@ -6,7 +6,7 @@ import { ShoppingCart, Heart, Search, User, LogOut, Sun, Moon, ShoppingBag, Menu
 import './Navbar.css';
 
 const Navbar = () => {
-  const { cart, wishlist, theme, toggleTheme, addToast } = useContext(AppContext);
+  const { cart, wishlist, theme, toggleTheme, addToast, user, logout } = useContext(AppContext);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -14,8 +14,8 @@ const Navbar = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const currentUser = authService.getCurrentUser();
-  const isAuth = authService.isAuthenticated();
+  const currentUser = user;
+  const isAuth = !!user;
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -27,7 +27,7 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    authService.logout();
+    logout();
     addToast('Logged out successfully.', 'info');
     setShowProfileDropdown(false);
     navigate('/login');
