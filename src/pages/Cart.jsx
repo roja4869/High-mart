@@ -1,223 +1,181 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { AppContext } from '../App';
+import { CartContext } from '../context/CartContext';
 import CartItem from '../components/CartItem';
-import OrderSummary from '../components/OrderSummary';
-import CouponBox from '../components/CouponBox';
-import EmptyCart from '../components/EmptyCart';
-import '../styles/Cart.css';
-
-// Initial pre-populated dummy items matching MOCK_PRODUCTS database structure
-const INITIAL_DUMMY_ITEMS = [
-  {
-    id: 1,
-    name: 'Wireless Over-Ear ANC Headphones',
-    category: 'Electronics',
-    price: 129.99,
-    discount: 20,
-    rating: 4.9,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80'
-  },
-  {
-    id: 2,
-    name: 'Minimalist Quartz Leather Watch',
-    category: 'Fashion',
-    price: 79.99,
-    discount: 15,
-    rating: 4.6,
-    quantity: 2,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'
-  },
-  {
-    id: 5,
-    name: 'Ergonomic Adjustable Office Chair',
-    category: 'Home & Kitchen',
-    price: 149.99,
-    discount: 12,
-    rating: 4.8,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=600&q=80'
-  }
-];
-
-const VALID_COUPONS = {
-  'HIGHMART10': { type: 'percent', value: 10, description: '10% OFF on subtotal' },
-  'DISCOUNT20': { type: 'percent', value: 20, description: '20% OFF on subtotal' },
-  'FREESHIP': { type: 'shipping', value: 100, description: 'Free delivery charges' }
-};
+import { ArrowLeft, Trash2, ShieldCheck, Tag, ShoppingBag } from 'lucide-react';
+import './Cart.css';
 
 const Cart = () => {
+  const { cart, clearCart, cartSubtotal } = useContext(CartContext);
   const navigate = useNavigate();
-  const { addToast } = useContext(AppContext) || {};
 
-  // Local React State
-  const [cartItems, setCartItems] = useState(INITIAL_DUMMY_ITEMS);
-  const [couponCode, setCouponCode] = useState('');
+  // Coupon promo code simulation state
+  const [coupon, setCoupon] = useState('');
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [couponStatus, setCouponStatus] = useState(null); // 'applied', 'error', null
   const [couponMessage, setCouponMessage] = useState('');
-  const [couponDiscountPercent, setCouponDiscountPercent] = useState(0);
-  const [freeShippingApplied, setFreeShippingApplied] = useState(false);
 
-  // Helper trigger for notifications
-  const triggerNotification = (msg, type = 'success') => {
-    if (addToast) {
-      addToast(msg, type);
-    } else {
-      console.log(`[Notification] ${type.toUpperCase()}: ${msg}`);
-    }
-  };
-
-  // State actions
-  const handleIncreaseQuantity = (id) => {
-    setCartItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-      )
-    );
-    triggerNotification('Cart item quantity increased.');
-  };
-
-  const handleDecreaseQuantity = (id) => {
-    setCartItems(prev =>
-      prev.map(item =>
-        item.id === id && item.quantity > 1
-          ? { ...item, quantity: item.quantity - 1 }
-          : item
-      )
-    );
-    triggerNotification('Cart item quantity decreased.', 'info');
-  };
-
-  const handleRemoveItem = (id) => {
-    const item = cartItems.find(i => i.id === id);
-    setCartItems(prev => prev.filter(item => item.id !== id));
-    if (item) {
-      triggerNotification(`${item.name} removed from shopping cart.`, 'info');
-    }
-  };
-
-  const handleSaveForLater = (id) => {
-    const item = cartItems.find(i => i.id === id);
-    setCartItems(prev => prev.filter(item => item.id !== id));
-    if (item) {
-      triggerNotification(`${item.name} saved for later purchases.`, 'success');
-    }
-  };
-
-  const handleApplyCoupon = (code) => {
-    const cleanCode = code.toUpperCase().trim();
-    if (VALID_COUPONS[cleanCode]) {
-      const coupon = VALID_COUPONS[cleanCode];
-      setCouponCode(cleanCode);
+  const handleApplyCoupon = (e) => {
+    e.preventDefault();
+    const cleanCoupon = coupon.toUpperCase().trim();
+    if (cleanCoupon === 'HIGHMART15') {
+      setDiscountPercent(15);
       setCouponStatus('applied');
-      
-      if (coupon.type === 'percent') {
-        setCouponDiscountPercent(coupon.value);
-        setCouponMessage(`Promo code applied: ${coupon.description}!`);
-      } else if (coupon.type === 'shipping') {
-        setFreeShippingApplied(true);
-        setCouponMessage(`Promo code applied: ${coupon.description}!`);
-      }
-      triggerNotification(`Coupon "${cleanCode}" applied successfully!`, 'success');
+      setCouponMessage('Promo code HIGHMART15 applied: 15% discount!');
+    } else if (cleanCoupon === 'DISCOUNT10') {
+      setDiscountPercent(10);
+      setCouponStatus('applied');
+      setCouponMessage('Promo code DISCOUNT10 applied: 10% discount!');
     } else {
+      setDiscountPercent(0);
       setCouponStatus('error');
-      setCouponMessage('Invalid coupon code. Try HIGHMART10 or DISCOUNT20.');
-      triggerNotification('Invalid coupon code entered.', 'error');
+      setCouponMessage('Invalid promo code. Try HIGHMART15.');
     }
   };
 
-  // Price calculations
-  const totalItemsCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-  
-  const subtotal = cartItems.reduce((acc, item) => {
-    const discountedPrice = item.price * (1 - item.discount / 100);
-    return acc + (discountedPrice * item.quantity);
-  }, 0);
-
-  // Apply discount calculations
-  const discountFromCoupon = (subtotal * couponDiscountPercent) / 100;
-  
-  // Flat delivery charge of ₹15.00, waived if subtotal > ₹200 or FREE SHIPPING coupon is active
-  const deliveryCharges = (subtotal > 200 || freeShippingApplied || subtotal === 0) ? 0 : 15.00;
-  
-  // Estimated taxes: GST 18% of the net subtotal
-  const gst = (subtotal - discountFromCoupon) * 0.18;
-  
-  const totalAmount = subtotal - discountFromCoupon + deliveryCharges + gst;
+  // Pricing calculations
+  const discountAmount = (cartSubtotal * discountPercent) / 100;
+  const freeShippingThreshold = 2000;
+  const shippingCharges = (cartSubtotal > freeShippingThreshold || cartSubtotal === 0) ? 0 : 150.00;
+  const estTaxes = (cartSubtotal - discountAmount) * 0.18; // GST 18%
+  const grandTotal = cartSubtotal - discountAmount + shippingCharges + estTaxes;
 
   const handleCheckout = () => {
-    triggerNotification('Redirecting to checkout processing page...', 'success');
-    setTimeout(() => {
-      navigate('/dashboard'); // Link directly to final checkout dashboard
-    }, 800);
-  };
-
-  const handleContinueShopping = () => {
-    navigate('/products');
+    // Navigate to simulated orders dashboard
+    navigate('/dashboard');
   };
 
   return (
-    <div className="cart-page-wrapper section-padding">
-      <div className="container">
-        
-        {/* Breadcrumb Navigation */}
-        <div className="cart-breadcrumb">
-          <Link to="/">Home</Link>
-          <span className="cart-breadcrumb-separator">&gt;</span>
-          <span className="cart-breadcrumb-current">Cart</span>
-        </div>
-
-        {cartItems.length === 0 ? (
-          <EmptyCart />
-        ) : (
-          <>
-            {/* Header */}
-            <div className="cart-page-header">
-              <h1>Shopping Cart</h1>
-              <span className="cart-items-count">
-                You have <strong>{totalItemsCount}</strong> items in your cart
-              </span>
-            </div>
-
-            {/* Layout Grid */}
-            <div className="cart-layout-container">
-              {/* Product Cards List */}
-              <div className="cart-products-column">
-                {cartItems.map(item => (
-                  <CartItem
-                    key={item.id}
-                    item={item}
-                    onIncrease={handleIncreaseQuantity}
-                    onDecrease={handleDecreaseQuantity}
-                    onRemove={handleRemoveItem}
-                    onSaveLater={handleSaveForLater}
-                  />
-                ))}
-              </div>
-
-              {/* Order Summary Panel */}
-              <div className="cart-summary-column">
-                <OrderSummary
-                  subtotal={subtotal}
-                  discount={discountFromCoupon}
-                  delivery={deliveryCharges}
-                  gst={gst}
-                  total={totalAmount}
-                  onCheckout={handleCheckout}
-                  onContinue={handleContinueShopping}
-                >
-                  <CouponBox
-                    onApplyCoupon={handleApplyCoupon}
-                    couponStatus={couponStatus}
-                    couponMessage={couponMessage}
-                  />
-                </OrderSummary>
-              </div>
-            </div>
-          </>
-        )}
+    <div className="cart-page-container">
+      {/* Breadcrumbs */}
+      <div className="cart-breadcrumbs">
+        <Link to="/">Home</Link>
+        <span>&gt;</span>
+        <span className="current">Shopping Cart</span>
       </div>
+
+      {cart.length === 0 ? (
+        <div className="empty-cart-wrapper glass-effect animate-fade-in">
+          <div className="empty-cart-icon-wrapper">
+            <ShoppingBag size={48} />
+          </div>
+          <h2>Your Cart is Empty</h2>
+          <p>Explore our premium collections and add items to your cart to begin your shopping experience.</p>
+          <Link to="/" className="start-shopping-btn">
+            Start Shopping
+          </Link>
+        </div>
+      ) : (
+        <div className="cart-content-layout">
+          {/* Left Column: Cart Items List */}
+          <div className="cart-items-section">
+            <div className="cart-header-actions">
+              <h1>Shopping Cart ({cart.length})</h1>
+              <button onClick={clearCart} className="clear-cart-anchor">
+                <Trash2 size={16} />
+                <span>Clear Cart</span>
+              </button>
+            </div>
+
+            {/* Free Shipping Progress bar */}
+            {cartSubtotal < freeShippingThreshold && (
+              <div className="shipping-progress-banner glass-effect">
+                <p>
+                  Add <strong>₹{(freeShippingThreshold - cartSubtotal).toFixed(2)}</strong> more to unlock **Free Express Shipping**!
+                </p>
+                <div className="progress-bar-track">
+                  <div 
+                    className="progress-bar-fill" 
+                    style={{ width: `${(cartSubtotal / freeShippingThreshold) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            <div className="cart-items-list">
+              {cart.map(item => (
+                <CartItem key={item.id} item={item} />
+              ))}
+            </div>
+
+            <Link to="/" className="continue-shopping-btn">
+              <ArrowLeft size={16} />
+              <span>Continue Shopping</span>
+            </Link>
+          </div>
+
+          {/* Right Column: Order Summary Card */}
+          <div className="cart-summary-section">
+            <div className="summary-card glass-effect">
+              <h3>Order Summary</h3>
+              <hr className="summary-divider" />
+
+              {/* Price Details */}
+              <div className="summary-price-details">
+                <div className="summary-row">
+                  <span>Cart Subtotal</span>
+                  <span>₹{cartSubtotal.toFixed(2)}</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="summary-row discount-row">
+                    <span>Discount ({discountPercent}%)</span>
+                    <span>-₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="summary-row">
+                  <span>Estimated Shipping</span>
+                  <span>{shippingCharges === 0 ? 'Free' : `₹${shippingCharges.toFixed(2)}`}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Estimated Taxes (GST 18%)</span>
+                  <span>₹{estTaxes.toFixed(2)}</span>
+                </div>
+                <hr className="summary-divider" />
+                <div className="summary-row grand-total-row">
+                  <span>Grand Total</span>
+                  <span>₹{grandTotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Coupon Code Section */}
+              <form onSubmit={handleApplyCoupon} className="coupon-form-box">
+                <label htmlFor="promo-code">Have a promo code?</label>
+                <div className="coupon-input-row">
+                  <input
+                    type="text"
+                    id="promo-code"
+                    placeholder="e.g. HIGHMART15"
+                    value={coupon}
+                    onChange={(e) => setCoupon(e.target.value)}
+                  />
+                  <button type="submit">Apply</button>
+                </div>
+                {couponStatus && (
+                  <div className={`coupon-status-msg ${couponStatus}`}>
+                    <Tag size={13} />
+                    <span>{couponMessage}</span>
+                  </div>
+                )}
+              </form>
+
+              {/* Checkout CTA */}
+              <button onClick={handleCheckout} className="checkout-btn-cta">
+                Proceed to Checkout
+              </button>
+
+              <div className="trust-badges-wrapper">
+                <div className="badge-item">
+                  <ShieldCheck size={16} className="badge-icon" />
+                  <span>Secure Checkout</span>
+                </div>
+                <div className="badge-item">
+                  <span>30-Day Returns</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

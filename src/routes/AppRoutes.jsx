@@ -6,7 +6,7 @@ import Profile from '../pages/Profile/Profile';
 import Login from '../components/Login';
 import Register from '../components/Register';
 import AdminDashboard from '../srinivas/AdminDashboard';
-import ProductList from '../pages/ProductList';
+import Products from '../pages/Products/Products';
 import ProductDetail from '../pages/ProductDetail';
 import Cart from '../pages/Cart';
 import Wishlist from '../pages/Wishlist';
@@ -15,7 +15,13 @@ import { authService } from '../services/authService';
 // Guard for protected routes (e.g. Dashboard)
 const ProtectedRoute = ({ children }) => {
   const isAuth = authService.isAuthenticated();
-  return isAuth ? children : <Navigate to="/login" replace />;
+  if (!isAuth) return <Navigate to="/login" replace />;
+  
+  const currentUser = authService.getCurrentUser();
+  if (currentUser?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  return children;
 };
 
 // Guard for admin-only routes (e.g. Admin Panel)
@@ -29,7 +35,11 @@ const AdminRoute = ({ children }) => {
 // Guard for public-only auth routes (e.g. Login, Register)
 const PublicRoute = ({ children }) => {
   const isAuth = authService.isAuthenticated();
-  return isAuth ? <Navigate to="/dashboard" replace /> : children;
+  if (isAuth) {
+    const currentUser = authService.getCurrentUser();
+    return currentUser?.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />;
+  }
+  return children;
 };
 
 const AppRoutes = () => {
@@ -38,7 +48,7 @@ const AppRoutes = () => {
       {/* Public Pages */}
       <Route path="/" element={<Home />} />
       <Route path="/home" element={<Navigate to="/" replace />} />
-      <Route path="/products" element={<ProductList />} />
+      <Route path="/products" element={<Products />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/wishlist" element={<Wishlist />} />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { AppContext } from '../../App';
 import { authService } from '../../services/authService';
 import ProfileCard from '../../components/ProfileCard/ProfileCard';
@@ -73,7 +74,7 @@ const MOCK_ORDER_SEED = [
     date: '2026-04-18T14:20:00.000Z',
     productName: 'Premium Organic Almonds (1kg)',
     price: 14.99,
-    productImage: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=600&q=80',
+    productImage: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&q=80',
     status: 'Cancelled',
     paymentMethod: 'High Mart Wallet',
     shippingAddress: {
@@ -89,8 +90,9 @@ const MOCK_ORDER_SEED = [
 ];
 
 const Profile = () => {
-  const { wishlist, toggleWishlist, addToCart, addToast } = useContext(AppContext);
+  const { wishlist, toggleWishlist, addToCart, addToast, setCurrentUser: setGlobalCurrentUser } = useContext(AppContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -98,6 +100,37 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [addresses, setAddresses] = useState([]);
+
+  // Check if activeTab was passed via navigation state
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location]);
+
+  const fetchUserOrders = async (userId) => {
+    try {
+      const token = localStorage.getItem('highMartToken');
+      const response = await axios.get(`/api/orders/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.data && response.data.success) {
+        setOrders(response.data.orders);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch user orders from database. Utilizing mock/local storage storage.", err.message);
+      // Fallback: load mock orders from local storage if database connection fails
+      const savedOrders = localStorage.getItem('highMartOrders');
+      if (savedOrders) {
+        setOrders(JSON.parse(savedOrders));
+      } else {
+        localStorage.setItem('highMartOrders', JSON.stringify(MOCK_ORDER_SEED));
+        setOrders(MOCK_ORDER_SEED);
+      }
+    }
+  };
 
   // Load User, Orders & Addresses data
   useEffect(() => {
@@ -117,18 +150,12 @@ const Profile = () => {
       if (!user.dob) user.dob = '1995-08-15';
       if (!user.bio) user.bio = 'Avid shopper & review contributor';
       setCurrentUser(user);
+      
+      // Fetch orders from backend database
+      fetchUserOrders(user.id);
     } else {
       // Safety redirect
       navigate('/login');
-    }
-
-    // Seed mock orders
-    const savedOrders = localStorage.getItem('highMartOrders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-    } else {
-      localStorage.setItem('highMartOrders', JSON.stringify(MOCK_ORDER_SEED));
-      setOrders(MOCK_ORDER_SEED);
     }
 
     // Load Addresses for overview display
@@ -156,6 +183,7 @@ const Profile = () => {
 
   const handleConfirmLogout = () => {
     authService.logout();
+    setGlobalCurrentUser(null);
     addToast('Signed out successfully.', 'info');
     setShowLogoutModal(false);
     navigate('/login');

@@ -12,7 +12,7 @@ import {
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
-  const { addToast } = useContext(AppContext);
+  const { addToast, setCurrentUser } = useContext(AppContext);
   const navigate = useNavigate();
   const currentUser = authService.getCurrentUser();
 
@@ -108,6 +108,7 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     authService.logout();
+    setCurrentUser(null);
     addToast('Logged out successfully.', 'info');
     navigate('/login');
   };

@@ -6,7 +6,7 @@ import { Mail, Lock, Eye, EyeOff, ShoppingBag } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
-  const { addToast, syncCart } = useContext(AppContext);
+  const { addToast, syncCart, setCurrentUser } = useContext(AppContext);
   const navigate = useNavigate();
   
   // Form State
@@ -79,15 +79,20 @@ const Login = () => {
         localStorage.removeItem('highMartRememberedEmail');
       }
 
+      setCurrentUser(data.user);
       addToast(data.message || 'Login successful!', 'success');
       if (syncCart) {
         await syncCart();
       }
       
-      // Redirect to dashboard
+      // Redirect to dashboard/admin panel based on role
       setTimeout(() => {
         setIsLoading(false);
-        navigate('/dashboard');
+        if (data.user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }, 1000);
     } catch (err) {
       setIsLoading(false);

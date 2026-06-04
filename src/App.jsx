@@ -1,8 +1,9 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes/AppRoutes';
-import Navbar from './components/Navbar/Navbar';
+import Navbar from './components/Navbar';
 import Footer from './components/Footer/Footer';
+import { CartContext } from './context/CartContext';
 import { authService } from './services/authService';
 import { cartService } from './services/cartService';
 
@@ -51,6 +52,9 @@ class ErrorBoundary extends React.Component {
 }
 
 const App = () => {
+  // Consume CartContext values
+  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast } = useContext(CartContext);
+
   // 1. Theme State
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('highMartTheme') || 'light';
@@ -70,99 +74,30 @@ const App = () => {
     }
   }, [theme]);
 
-  // 2. Cart & Wishlist State
-  const [cart, setCart] = useState([]);
-
+  // 2. Wishlist State
   const [wishlist, setWishlist] = useState(() => {
     const local = localStorage.getItem('highMartWishlist');
     return local ? JSON.parse(local) : [];
   });
 
+  // 3. Global Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [priceRange, setPriceRange] = useState(15000);
+  const [activeNavbarTab, setActiveNavbarTab] = useState('categories');
+
+  // 4. Reactive Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    return authService.getCurrentUser();
+  });
+
   const syncCart = async () => {
-    if (authService.isAuthenticated()) {
-      try {
-        const response = await cartService.getCart();
-        if (response.success) {
-          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
-          setCart(mapped);
-        }
-      } catch (err) {
-        console.warn("Could not sync cart with server:", err.message);
-      }
-    } else {
-      const local = localStorage.getItem('highMartCart');
-      setCart(local ? JSON.parse(local) : []);
-    }
+    // Frontend-only: Sync cart is no-op
   };
-
-  useEffect(() => {
-    syncCart();
-  }, []);
-
-  useEffect(() => {
-    if (!authService.isAuthenticated()) {
-      localStorage.setItem('highMartCart', JSON.stringify(cart));
-    }
-  }, [cart]);
 
   useEffect(() => {
     localStorage.setItem('highMartWishlist', JSON.stringify(wishlist));
   }, [wishlist]);
-
-  // Actions
-  const addToCart = async (product) => {
-    if (authService.isAuthenticated()) {
-      try {
-        const response = await cartService.addToCart(product.id, 1);
-        if (response.success) {
-          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
-          setCart(mapped);
-          addToast(`${product.name} added to cart.`, 'success');
-        }
-      } catch (error) {
-        const errMsg = error.response?.data?.error || error.message;
-        addToast(errMsg, 'error');
-      }
-    } else {
-      setCart(prev => {
-        const exists = prev.find(item => item.id === product.id);
-        if (exists) {
-          addToast(`${product.name} quantity updated in cart.`, 'success');
-          return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-        }
-        addToast(`${product.name} added to cart.`, 'success');
-        return [...prev, { ...product, quantity: 1 }];
-      });
-    }
-  };
-
-  const removeFromCart = async (productId) => {
-    if (authService.isAuthenticated()) {
-      try {
-        const response = await cartService.removeFromCart(productId);
-        if (response.success) {
-          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
-          setCart(mapped);
-          addToast('Item removed from cart.', 'info');
-        }
-      } catch (error) {
-        addToast('Failed to remove item from cart.', 'error');
-      }
-    } else {
-      setCart(prev => {
-        const target = prev.find(item => item.id === productId);
-        if (target) {
-          addToast(`${target.name} removed from cart.`, 'info');
-        }
-        return prev.filter(item => item.id !== productId);
-      });
-    }
-  };
-
-  const clearCart = () => {
-    setCart([]);
-    addToast('Shopping cart cleared.', 'info');
-  };
 
   const toggleWishlist = (product) => {
     setWishlist(prev => {
@@ -174,19 +109,6 @@ const App = () => {
       addToast(`${product.name} added to wishlist!`, 'success');
       return [...prev, product];
     });
-  };
-
-  // 3. Global Toast State
-  const [toasts, setToasts] = useState([]);
-
-  const addToast = (message, type = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
-    
-    // Auto remove after 3.5s
-    setTimeout(() => {
-      setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 3500);
   };
 
   return (
@@ -203,7 +125,17 @@ const App = () => {
         toggleWishlist,
         toasts,
         addToast,
-        syncCart
+        syncCart,
+        searchQuery,
+        setSearchQuery,
+        selectedCategories,
+        setSelectedCategories,
+        priceRange,
+        setPriceRange,
+        activeNavbarTab,
+        setActiveNavbarTab,
+        currentUser,
+        setCurrentUser
       }}>
         <BrowserRouter>
           <div className="app-container">
