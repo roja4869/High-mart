@@ -10,6 +10,7 @@ const ITEMS_PER_PAGE = 6;
 const ProductList = () => {
   const { addToCart, toggleWishlist, wishlist } = useContext(AppContext);
   const [searchParams, setSearchParams] = useSearchParams();
+  console.log("[RENDER] ProductList Component", searchParams.toString());
 
   // API state
   const [products, setProducts] = useState([]);
