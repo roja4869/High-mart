@@ -107,9 +107,16 @@ export const addToCart = async (req, res, next) => {
         args: [targetQty, userId, prodIdNum]
       });
     } else {
-      // Add new cart item
+      // Add new cart item with ON CONFLICT resolution for concurrent requests
       await db.execute({
-        sql: "INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)",
+        sql: `
+          INSERT INTO cart (user_id, product_id, quantity) 
+          VALUES (?, ?, ?)
+          ON CONFLICT(user_id, product_id) 
+          DO UPDATE SET 
+            quantity = quantity + excluded.quantity,
+            updated_at = CURRENT_TIMESTAMP
+        `,
         args: [userId, prodIdNum, qtyNum]
       });
     }
@@ -232,6 +239,29 @@ export const removeFromCart = async (req, res, next) => {
       success: true,
       message: 'Product removed from cart successfully',
       cart: updatedCart
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Clear entire cart
+ * @route   DELETE /api/cart
+ * @access  Private
+ */
+export const clearCart = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    await db.execute({
+      sql: "DELETE FROM cart WHERE user_id = ?",
+      args: [userId]
+    });
+
+    res.json({
+      success: true,
+      message: 'Cart cleared successfully',
+      cart: []
     });
   } catch (error) {
     next(error);

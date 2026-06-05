@@ -50,6 +50,31 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  const syncCartWithBackend = async () => {
+    const token = localStorage.getItem('highMartToken');
+    if (!token) return;
+
+    try {
+      const localData = localStorage.getItem('highMartCart');
+      const guestCart = localData ? JSON.parse(localData) : [];
+
+      if (guestCart.length > 0) {
+        for (const item of guestCart) {
+          await cartService.addToCart(item.productId || item.id, item.quantity);
+        }
+        localStorage.removeItem('highMartCart');
+      }
+
+      const response = await cartService.getCart();
+      if (response && response.cart) {
+        const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
+        setCart(mapped);
+      }
+    } catch (e) {
+      console.error('Error syncing cart with backend:', e);
+    }
+  };
+
   // Run initial sync on mount
   useEffect(() => {
     syncCart();
@@ -73,14 +98,16 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    if (!product || !product.id) {
+    if (!product || (!product.id && !product.productId)) {
       addToast('Invalid product details. Cannot add to cart.', 'error');
       return;
     }
 
+    const prodId = product.productId || product.id;
+
     if (authService.isAuthenticated()) {
       try {
-        const response = await cartService.addToCart(product.id, 1);
+        const response = await cartService.addToCart(prodId, 1);
         if (response.success) {
           const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
           setCart(mapped);
@@ -99,15 +126,15 @@ export const CartProvider = ({ children }) => {
       }
     } else {
       setCart((prevCart) => {
-        const existingProduct = prevCart.find((item) => item.id === product.id);
+        const existingProduct = prevCart.find((item) => (item.productId || item.id) === prodId);
         if (existingProduct) {
           addToast(`Updated quantity of ${product.name} in cart.`, 'success');
           return prevCart.map((item) =>
-            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+            (item.productId || item.id) === prodId ? { ...item, quantity: item.quantity + 1 } : item
           );
         }
         addToast(`${product.name} added to cart.`, 'success');
-        return [...prevCart, { ...product, quantity: 1 }];
+        return [...prevCart, { ...product, id: prodId, productId: prodId, quantity: 1 }];
       });
     }
   };
@@ -134,11 +161,11 @@ export const CartProvider = ({ children }) => {
       }
     } else {
       setCart((prevCart) => {
-        const item = prevCart.find(i => i.id === productId);
+        const item = prevCart.find(i => (i.productId || i.id) === productId);
         if (item) {
           addToast(`${item.name} removed from cart.`, 'info');
         }
-        return prevCart.filter((item) => item.id !== productId);
+        return prevCart.filter((item) => (item.productId || item.id) !== productId);
       });
     }
   };
@@ -170,7 +197,7 @@ export const CartProvider = ({ children }) => {
     } else {
       setCart((prevCart) =>
         prevCart.map((item) =>
-          item.id === productId ? { ...item, quantity } : item
+          (item.productId || item.id) === productId ? { ...item, quantity } : item
         )
       );
     }
@@ -200,7 +227,8 @@ export const CartProvider = ({ children }) => {
         cartSubtotal,
         toasts,
         addToast,
-        syncCart
+        syncCart,
+        syncCartWithBackend
       }}
     >
       {children}

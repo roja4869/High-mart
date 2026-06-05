@@ -1,152 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SlidersHorizontal, Star, ChevronDown, ChevronRight } from 'lucide-react';
 import SearchBar from '../SearchBar/SearchBar';
+import { categoryService } from '../../services/categoryService';
 import './Filters.css';
-
-// Define the full Fashion categories hierarchy tree
-const FASHION_TREE = {
-  name: 'Fashion',
-  path: 'Fashion',
-  children: [
-    {
-      name: 'Clothing',
-      path: 'Fashion > Clothing',
-      children: [
-        {
-          name: 'Men',
-          path: 'Fashion > Clothing > Men',
-          children: [
-            { name: 'T-Shirts', path: 'Fashion > Clothing > Men > T-Shirt' },
-            { name: 'Shirts', path: 'Fashion > Clothing > Men > Shirt' },
-            { name: 'Jeans', path: 'Fashion > Clothing > Men > Jeans' },
-            { name: 'Trousers', path: 'Fashion > Clothing > Men > Trousers' },
-            { name: 'Jackets', path: 'Fashion > Clothing > Men > Jacket' },
-            { name: 'Hoodies', path: 'Fashion > Clothing > Men > Hoodie' }
-          ]
-        },
-        {
-          name: 'Women',
-          path: 'Fashion > Clothing > Women',
-          children: [
-            { name: 'Sarees', path: 'Fashion > Clothing > Women > Saree' },
-            { name: 'Kurtis', path: 'Fashion > Clothing > Women > Kurti' },
-            { name: 'Dresses', path: 'Fashion > Clothing > Women > Dress' },
-            { name: 'Tops', path: 'Fashion > Clothing > Women > Top' },
-            { name: 'Jeans', path: 'Fashion > Clothing > Women > Jeans' },
-            { name: 'Jackets', path: 'Fashion > Clothing > Women > Jacket' }
-          ]
-        },
-        {
-          name: 'Kids',
-          path: 'Fashion > Clothing > Kids',
-          children: [
-            { name: 'Boys Wear', path: 'Fashion > Clothing > Kids > Boys Wear' },
-            { name: 'Girls Wear', path: 'Fashion > Clothing > Kids > Girls Wear' },
-            { name: 'School Uniforms', path: 'Fashion > Clothing > Kids > School Uniform' },
-            { name: 'Party Wear', path: 'Fashion > Clothing > Kids > Party Wear' }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'Footwear',
-      path: 'Fashion > Footwear',
-      children: [
-        {
-          name: 'Men',
-          path: 'Fashion > Footwear > Men',
-          children: [
-            { name: 'Sports Shoes', path: 'Fashion > Footwear > Men > Sports Shoes' },
-            { name: 'Sneakers', path: 'Fashion > Footwear > Men > Sneakers' },
-            { name: 'Formal Shoes', path: 'Fashion > Footwear > Men > Formal Shoes' },
-            { name: 'Sandals', path: 'Fashion > Footwear > Men > Sandals' }
-          ]
-        },
-        {
-          name: 'Women',
-          path: 'Fashion > Footwear > Women',
-          children: [
-            { name: 'Heels', path: 'Fashion > Footwear > Women > Heels' },
-            { name: 'Flats', path: 'Fashion > Footwear > Women > Flats' },
-            { name: 'Sneakers', path: 'Fashion > Footwear > Women > Sneakers' },
-            { name: 'Sandals', path: 'Fashion > Footwear > Women > Sandals' }
-          ]
-        },
-        {
-          name: 'Kids',
-          path: 'Fashion > Footwear > Kids',
-          children: [
-            { name: 'School Shoes', path: 'Fashion > Footwear > Kids > School Shoes' },
-            { name: 'Casual Shoes', path: 'Fashion > Footwear > Kids > Casual Shoes' },
-            { name: 'Sports Shoes', path: 'Fashion > Footwear > Kids > Sports Shoes' }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'Eyewear',
-      path: 'Fashion > Eyewear',
-      children: [
-        {
-          name: 'Men',
-          path: 'Fashion > Eyewear > Men',
-          children: [
-            { name: 'Sunglasses', path: 'Fashion > Eyewear > Men > Sunglasses' },
-            { name: 'Reading Glasses', path: 'Fashion > Eyewear > Men > Reading Glasses' },
-            { name: 'Computer Glasses', path: 'Fashion > Eyewear > Men > Computer Glasses' }
-          ]
-        },
-        {
-          name: 'Women',
-          path: 'Fashion > Eyewear > Women',
-          children: [
-            { name: 'Sunglasses', path: 'Fashion > Eyewear > Women > Sunglasses' },
-            { name: 'Fashion Glasses', path: 'Fashion > Eyewear > Women > Fashion Glasses' },
-            { name: 'Reading Glasses', path: 'Fashion > Eyewear > Women > Reading Glasses' }
-          ]
-        },
-        {
-          name: 'Kids',
-          path: 'Fashion > Eyewear > Kids',
-          children: [
-            { name: 'Sunglasses', path: 'Fashion > Eyewear > Kids > Sunglasses' },
-            { name: 'Protective Glasses', path: 'Fashion > Eyewear > Kids > Protective Glasses' }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'Bags',
-      path: 'Fashion > Bags',
-      children: [
-        { name: 'Men', path: 'Fashion > Bags > Men' },
-        { name: 'Women', path: 'Fashion > Bags > Women' },
-        { name: 'Kids', path: 'Fashion > Bags > Kids' }
-      ]
-    },
-    {
-      name: 'Watches',
-      path: 'Fashion > Watches',
-      children: [
-        { name: 'Men', path: 'Fashion > Watches > Men' },
-        { name: 'Women', path: 'Fashion > Watches > Women' },
-        { name: 'Kids', path: 'Fashion > Watches > Kids' }
-      ]
-    },
-    {
-      name: 'Accessories',
-      path: 'Fashion > Accessories',
-      children: [
-        { name: 'Belts', path: 'Fashion > Accessories > Belt' },
-        { name: 'Caps', path: 'Fashion > Accessories > Cap' },
-        { name: 'Wallets', path: 'Fashion > Accessories > Wallet' },
-        { name: 'Jewellery', path: 'Fashion > Accessories > Jewellery' },
-        { name: 'Hair Accessories', path: 'Fashion > Accessories > Hair Accessories' },
-        { name: 'Scarves', path: 'Fashion > Accessories > Scarf' }
-      ]
-    }
-  ]
-};
 
 const Filters = ({
   searchQuery,
@@ -167,18 +23,23 @@ const Filters = ({
   selectedGenders = [],
   setSelectedGenders
 }) => {
-  const nonFashionCategories = [
-    'Electronics',
-    'Groceries',
-    'Home & Kitchen',
-    'Beauty',
-    'Toys',
-    'Books',
-    'Sports'
-  ];
+  const [categoriesTree, setCategoriesTree] = useState([]);
+  const [expandedNodes, setExpandedNodes] = useState({});
 
-  // Keep track of expanded state for hierarchical tree nodes
-  const [expandedNodes, setExpandedNodes] = useState({ 'Fashion': true });
+  // 1. Fetch categories hierarchical tree from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await categoryService.getCategories();
+        if (res && res.categories) {
+          setCategoriesTree(res.categories);
+        }
+      } catch (err) {
+        console.error('Failed to load categories tree in Filters:', err.message);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const toggleExpand = (path, e) => {
     e.stopPropagation();
@@ -188,29 +49,20 @@ const Filters = ({
     }));
   };
 
+  // 2. Count products belonging to this category/subcategory path dynamically
   const getProductCount = (path) => {
     if (!products || products.length === 0) return 0;
 
-    if (nonFashionCategories.includes(path)) {
-      return products.filter(p => p.category === path).length;
-    }
+    return products.filter(p => {
+      // Construct full category path for the product
+      let prodPath = p.category || '';
+      if (p.subCategory) prodPath += ` > ${p.subCategory}`;
+      if (p.gender) prodPath += ` > ${p.gender}`;
+      if (p.productType) prodPath += ` > ${p.productType}`;
 
-    if (path === 'Fashion') {
-      return products.filter(p => p.category === 'Fashion').length;
-    }
-
-    if (path.startsWith('Fashion > ')) {
-      const parts = path.split(' > ');
-      return products.filter(p => {
-        if (p.category !== 'Fashion') return false;
-        if (parts[1] && p.subCategory !== parts[1]) return false;
-        if (parts[2] && p.gender !== parts[2]) return false;
-        if (parts[3] && p.productType !== parts[3]) return false;
-        return true;
-      }).length;
-    }
-
-    return 0;
+      // Check if prodPath matches exactly or starts with this path
+      return prodPath === path || prodPath.startsWith(path + ' > ');
+    }).length;
   };
 
   const handleCategoryCheckboxChange = (cat) => {
@@ -246,11 +98,11 @@ const Filters = ({
   // Dynamically scale price slider max based on items
   const maxPriceVal = products.length > 0 ? Math.max(...products.map(p => p.price), 15000) : 15000;
 
-  // Recursive rendering of Fashion Categories tree node
+  // Recursive rendering of Categories tree node
   const renderTreeNode = (node, depth = 0) => {
     const isChecked = selectedCategories.includes(node.path);
     const hasChildren = node.children && node.children.length > 0;
-    const isExpanded = expandedNodes[node.path];
+    const isExpanded = !!expandedNodes[node.path];
     const count = getProductCount(node.path);
 
     return (
@@ -312,30 +164,7 @@ const Filters = ({
       <div className="filter-group">
         <h3>Categories</h3>
         <div className="categories-tree-scroll-container">
-          {/* Flat categories */}
-          {nonFashionCategories.map(cat => {
-            const isChecked = selectedCategories.includes(cat);
-            const count = getProductCount(cat);
-            return (
-              <label key={cat} className="category-checkbox-label flat-category-label">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => handleCategoryCheckboxChange(cat)}
-                  className="category-checkbox-input"
-                />
-                <span className="custom-checkbox"></span>
-                <span className="checkbox-text">
-                  {cat} <span className="node-count-badge">({count})</span>
-                </span>
-              </label>
-            );
-          })}
-
-          {/* Recursive Fashion Category Tree */}
-          <div className="fashion-tree-root-box">
-            {renderTreeNode(FASHION_TREE, 0)}
-          </div>
+          {categoriesTree.map(root => renderTreeNode(root, 0))}
         </div>
       </div>
 

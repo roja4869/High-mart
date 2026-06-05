@@ -21,6 +21,27 @@ CREATE TABLE IF NOT EXISTS categories (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 1.1 Subcategories Table
+CREATE TABLE IF NOT EXISTS subcategories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 1.2 Category Relationships Table
+CREATE TABLE IF NOT EXISTS category_relationships (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  parent_id INTEGER NOT NULL,
+  child_id INTEGER NOT NULL,
+  parent_type TEXT NOT NULL CHECK(parent_type IN ('category', 'subcategory')),
+  child_type TEXT NOT NULL CHECK(child_type IN ('category', 'subcategory')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(parent_id, child_id, parent_type, child_type)
+);
+
 -- 2. Users Table
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +61,7 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   price REAL NOT NULL CHECK(price >= 0),
   category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+  subcategory_id INTEGER REFERENCES subcategories(id) ON DELETE SET NULL,
   image TEXT DEFAULT 'default_product.jpg',
   stock INTEGER NOT NULL DEFAULT 0 CHECK(stock >= 0),
   brand TEXT,
@@ -76,6 +98,13 @@ CREATE TABLE IF NOT EXISTS orders (
   payment_method TEXT NOT NULL,
   payment_status TEXT DEFAULT 'Pending', -- 'Pending', 'Paid', 'Failed', 'Refunded'
   transaction_id TEXT,
+  order_id TEXT,
+  customer_name TEXT,
+  customer_email TEXT,
+  customer_phone TEXT,
+  order_status TEXT DEFAULT 'Pending',
+  order_date DATETIME,
+  delivery_address TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -89,8 +118,11 @@ CREATE TABLE IF NOT EXISTS order_items (
   price REAL NOT NULL CHECK(price >= 0),
   image TEXT,
   quantity INTEGER NOT NULL CHECK(quantity > 0),
+  product_name TEXT,
+  product_image TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- 7. Payments Table
 CREATE TABLE IF NOT EXISTS payments (
@@ -133,6 +165,7 @@ CREATE TABLE IF NOT EXISTS inventory_logs (
 
 -- Products
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_subcategory ON products(subcategory_id);
 CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
 
 -- Cart
@@ -154,3 +187,14 @@ CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
 
 -- Inventory Logs
 CREATE INDEX IF NOT EXISTS idx_inventory_logs_product ON inventory_logs(product_id);
+
+-- 10. Wishlist Table
+CREATE TABLE IF NOT EXISTS wishlist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, product_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_wishlist_user ON wishlist(user_id);

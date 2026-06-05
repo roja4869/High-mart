@@ -6,7 +6,7 @@ import Footer from './components/Footer/Footer';
 import { CartContext } from './context/CartContext';
 import { authService } from './services/authService';
 import { cartService } from './services/cartService';
-import { MOCK_PRODUCTS } from './services/productService';
+import { wishlistService } from './services/wishlistService';
 
 // Create Global App Context
 export const AppContext = createContext();
@@ -54,12 +54,29 @@ class ErrorBoundary extends React.Component {
 
 const App = () => {
   // Consume CartContext values
-  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast, syncCart, updateQuantity } = useContext(CartContext);
+  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast, updateQuantity, syncCartWithBackend } = useContext(CartContext);
 
   // 1. Theme State
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('highMartTheme') || 'light';
   });
+
+  // 2. Reactive Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    return authService.getCurrentUser();
+  });
+
+  const user = currentUser;
+  const setUser = setCurrentUser;
+
+  // 3. Wishlist State
+  const [wishlist, setWishlist] = useState([]);
+
+  // 4. Global Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [priceRange, setPriceRange] = useState(15000);
+  const [activeNavbarTab, setActiveNavbarTab] = useState('categories');
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
@@ -75,47 +92,105 @@ const App = () => {
     }
   }, [theme]);
 
-  // 2. Wishlist State
-  const [wishlist, setWishlist] = useState(() => {
-    const local = localStorage.getItem('highMartWishlist');
-    return local ? JSON.parse(local) : [];
-  });
-
-  // 3. Global Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [priceRange, setPriceRange] = useState(15000);
-  const [activeNavbarTab, setActiveNavbarTab] = useState('categories');
-
-  // 4. Reactive Authentication State
-  const [currentUser, setCurrentUser] = useState(() => {
-    return authService.getCurrentUser();
-  });
+  // Sync/fetch wishlist when user logs in/changes or on mount
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      const token = localStorage.getItem('highMartToken');
+      if (token) {
+        try {
+          const res = await wishlistService.getWishlist();
+          if (res && res.wishlist) {
+            setWishlist(res.wishlist);
+          }
+        } catch (e) {
+          console.error('Failed to load wishlist from database:', e);
+        }
+      } else {
+        const local = localStorage.getItem('highMartWishlist');
+        setWishlist(local ? JSON.parse(local) : []);
+      }
+    };
+    fetchWishlist();
+  }, [currentUser]);
 
   const logout = () => {
     authService.logout();
     setCurrentUser(null);
   };
 
+  const syncCart = async () => {
+    // 1. Sync cart
+    await syncCartWithBackend();
+    
+    // 2. Sync wishlist
+    const token = localStorage.getItem('highMartToken');
+    if (token) {
+      try {
+        const localWish = localStorage.getItem('highMartWishlist');
+        const guestWish = localWish ? JSON.parse(localWish) : [];
+        if (guestWish.length > 0) {
+          for (const item of guestWish) {
+            await wishlistService.addToWishlist(item.id);
+          }
+          localStorage.removeItem('highMartWishlist');
+        }
+        const res = await wishlistService.getWishlist();
+        if (res && res.wishlist) {
+          setWishlist(res.wishlist);
+        }
+      } catch (e) {
+        console.error('Failed to sync wishlist with backend:', e);
+      }
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem('highMartWishlist', JSON.stringify(wishlist));
+    const token = localStorage.getItem('highMartToken');
+    if (!token) {
+      localStorage.setItem('highMartWishlist', JSON.stringify(wishlist));
+    }
   }, [wishlist]);
 
-  const toggleWishlist = (product) => {
+  const toggleWishlist = async (product) => {
     const currentUser = authService.getCurrentUser();
     if (currentUser?.role === 'admin') {
       addToast('Monitoring Mode: Administrators cannot use the wishlist feature.', 'error');
       return;
     }
-    setWishlist(prev => {
-      const exists = prev.find(item => item.id === product.id);
-      if (exists) {
-        addToast(`${product.name} removed from wishlist.`, 'info');
-        return prev.filter(item => item.id !== product.id);
+
+    if (!product || !product.id) return;
+    const token = localStorage.getItem('highMartToken');
+
+    if (token) {
+      const exists = wishlist.some(item => item.id === product.id);
+      try {
+        if (exists) {
+          const res = await wishlistService.removeFromWishlist(product.id);
+          if (res && res.wishlist) {
+            setWishlist(res.wishlist);
+            addToast(`${product.name} removed from wishlist.`, 'info');
+          }
+        } else {
+          const res = await wishlistService.addToWishlist(product.id);
+          if (res && res.wishlist) {
+            setWishlist(res.wishlist);
+            addToast(`${product.name} added to wishlist!`, 'success');
+          }
+        }
+      } catch (err) {
+        addToast(err.response?.data?.message || err.message || 'Failed to update wishlist', 'error');
       }
-      addToast(`${product.name} added to wishlist!`, 'success');
-      return [...prev, product];
-    });
+    } else {
+      setWishlist(prev => {
+        const exists = prev.find(item => item.id === product.id);
+        if (exists) {
+          addToast(`${product.name} removed from wishlist.`, 'info');
+          return prev.filter(item => item.id !== product.id);
+        }
+        addToast(`${product.name} added to wishlist!`, 'success');
+        return [...prev, product];
+      });
+    }
   };
 
   return (

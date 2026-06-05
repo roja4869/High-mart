@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { adminService } from './adminService';
 import { authService } from '../services/authService';
+import { categoryService } from '../services/categoryService';
 import { AppContext } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -26,6 +27,7 @@ const AdminDashboard = () => {
   const [ordersList, setOrdersList] = useState([]);
   const [usersList, setUsersList] = useState([]);
   const [inventoryLogs, setInventoryLogs] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Search & Filter states
@@ -45,6 +47,7 @@ const AdminDashboard = () => {
   const [newProdName, setNewProdName] = useState('');
   const [newProdPrice, setNewProdPrice] = useState('');
   const [newProdCategory, setNewProdCategory] = useState('');
+  const [newProdSubcategoryId, setNewProdSubcategoryId] = useState('');
   const [newProdStock, setNewProdStock] = useState('');
   const [newProdDesc, setNewProdDesc] = useState('');
 
@@ -52,12 +55,23 @@ const AdminDashboard = () => {
   const [editProdName, setEditProdName] = useState('');
   const [editProdPrice, setEditProdPrice] = useState('');
   const [editProdCategory, setEditProdCategory] = useState('');
+  const [editProdSubcategoryId, setEditProdSubcategoryId] = useState('');
   const [editProdStock, setEditProdStock] = useState('');
   const [editProdDesc, setEditProdDesc] = useState('');
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
+      // 0. Fetch Categories Tree
+      try {
+        const catRes = await categoryService.getCategories();
+        if (catRes && catRes.categories) {
+          setCategories(catRes.categories);
+        }
+      } catch (err) {
+        console.error('Failed to load categories in admin panel:', err);
+      }
+
       // 1. Fetch Stats
       const statData = await adminService.getStats();
       setStats(statData);
@@ -75,21 +89,12 @@ const AdminDashboard = () => {
       setOrdersList(orderData);
 
       // 5. Fetch Products
-      // We will read from fallback local storage mock products first, then API
-      const localProds = JSON.parse(localStorage.getItem('highMartMockProducts') || '[]');
       try {
         const response = await axios.get('/api/products');
-        setProductsList([...localProds, ...response.data.products]);
+        setProductsList(response.data.products || []);
       } catch (err) {
-        // Mock fallback products
-        const defaultProducts = [
-          { id: 1, name: "Premium Coffee Maker", price: 129.99, category: "Appliances", stock: 15, image: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&q=80' },
-          { id: 2, name: "Wireless Noise-Cancelling Headphones", price: 199.99, category: "Electronics", stock: 2, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
-          { id: 3, name: "Ergonomic Office Chair", price: 249.99, category: "Furniture", stock: 8, image: 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=400&q=80' },
-          { id: 4, name: "Stainless Steel Water Bottle", price: 24.99, category: "Kitchenware", stock: 50, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
-          { id: 5, name: "Ultra-Light Running Shoes", price: 89.99, category: "Footwear", stock: 12, image: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=400&q=80' }
-        ];
-        setProductsList([...localProds, ...defaultProducts]);
+        console.error('Failed to fetch products:', err);
+        setProductsList([]);
       }
 
       // 6. Fetch Inventory Logs
@@ -127,6 +132,9 @@ const AdminDashboard = () => {
     formData.append('category', newProdCategory);
     formData.append('stock', newProdStock);
     formData.append('description', newProdDesc);
+    if (newProdSubcategoryId) {
+      formData.append('subcategory_id', newProdSubcategoryId);
+    }
 
     try {
       const response = await adminService.createProduct(formData);
@@ -136,6 +144,7 @@ const AdminDashboard = () => {
       setNewProdName('');
       setNewProdPrice('');
       setNewProdCategory('');
+      setNewProdSubcategoryId('');
       setNewProdStock('');
       setNewProdDesc('');
       setShowAddProduct(false);
@@ -151,6 +160,7 @@ const AdminDashboard = () => {
     setEditProdName(product.name);
     setEditProdPrice(product.price);
     setEditProdCategory(product.category);
+    setEditProdSubcategoryId(product.subcategory_id || '');
     setEditProdStock(product.stock);
     setEditProdDesc(product.description || '');
     setShowEditProduct(true);
@@ -164,6 +174,7 @@ const AdminDashboard = () => {
     formData.append('category', editProdCategory);
     formData.append('stock', editProdStock);
     formData.append('description', editProdDesc);
+    formData.append('subcategory_id', editProdSubcategoryId || '');
 
     try {
       const response = await adminService.updateProduct(editingProduct.id, formData);
@@ -186,28 +197,13 @@ const AdminDashboard = () => {
     formData.append('category', product.category);
     formData.append('stock', newStock.toString());
     if (product.description) formData.append('description', product.description);
+    if (product.subcategory_id) {
+      formData.append('subcategory_id', product.subcategory_id.toString());
+    }
 
     try {
       const response = await adminService.updateProduct(product.id, formData);
       addToast(response.message, 'success');
-      
-      // Update inventoryLogs locally if backend fallback was used
-      if (response.message.includes('simulated') || response.message.includes('mock')) {
-        const localLogs = JSON.parse(localStorage.getItem('highMartMockInventoryLogs') || '[]');
-        const nextLogId = localLogs.length > 0 ? Math.max(...localLogs.map(l => l.id)) + 1 : 1000;
-        const newLog = {
-          id: nextLogId,
-          productId: product.id,
-          productName: product.name,
-          activityType: "Stock Adjustment",
-          quantityChange: delta,
-          remainingStock: newStock,
-          performedBy: currentUser?.name || "Admin",
-          timestamp: new Date().toISOString()
-        };
-        localLogs.unshift(newLog);
-        localStorage.setItem('highMartMockInventoryLogs', JSON.stringify(localLogs));
-      }
 
       fetchAllData();
     } catch (err) {
@@ -225,6 +221,24 @@ const AdminDashboard = () => {
         addToast(err.message, 'error');
       }
     }
+  };
+
+  const getSubcategoryFlatList = (categoryName) => {
+    const cat = categories.find(c => c.name === categoryName);
+    if (!cat || !cat.children) return [];
+
+    const list = [];
+    const traverse = (node) => {
+      if (!node.children || node.children.length === 0) {
+        list.push({ id: node.id, path: node.path, name: node.name });
+      } else {
+        list.push({ id: node.id, path: node.path, name: node.name });
+        node.children.forEach(child => traverse(child));
+      }
+    };
+    
+    cat.children.forEach(child => traverse(child));
+    return list;
   };
 
   // ==================== ORDER STATUS TOGGLE ====================
@@ -698,14 +712,9 @@ const AdminDashboard = () => {
                       className="category-filter-select"
                     >
                       <option value="">All Categories</option>
-                      <option value="Appliances">Appliances</option>
-                      <option value="Electronics">Electronics</option>
-                      <option value="Furniture">Furniture</option>
-                      <option value="Kitchenware">Kitchenware</option>
-                      <option value="Footwear">Footwear</option>
-                      <option value="Groceries">Groceries</option>
-                      <option value="Fashion">Fashion</option>
-                      <option value="Beauty">Beauty</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
                     </select>
 
                     <button className="add-new-sku-btn" onClick={() => setShowAddProduct(true)}>
@@ -1007,20 +1016,37 @@ const AdminDashboard = () => {
                 <select 
                   required 
                   value={newProdCategory}
-                  onChange={(e) => setNewProdCategory(e.target.value)}
+                  onChange={(e) => {
+                    setNewProdCategory(e.target.value);
+                    setNewProdSubcategoryId('');
+                  }}
                   className="dialog-form-select"
                 >
                   <option value="">Select Category</option>
-                  <option value="Appliances">Appliances</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Furniture">Furniture</option>
-                  <option value="Kitchenware">Kitchenware</option>
-                  <option value="Footwear">Footwear</option>
-                  <option value="Groceries">Groceries</option>
-                  <option value="Fashion">Fashion</option>
-                  <option value="Beauty">Beauty</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
                 </select>
               </div>
+              {newProdCategory && getSubcategoryFlatList(newProdCategory).length > 0 && (
+                <div className="form-input-box">
+                  <label>Subcategory *</label>
+                  <select
+                    required
+                    value={newProdSubcategoryId}
+                    onChange={(e) => setNewProdSubcategoryId(e.target.value)}
+                    className="dialog-form-select"
+                  >
+                    <option value="">Select Subcategory</option>
+                    {getSubcategoryFlatList(newProdCategory).map(sub => {
+                      const displayPath = sub.path.replace(`${newProdCategory} > `, '');
+                      return (
+                        <option key={sub.id} value={sub.id}>{displayPath}</option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
               <div className="form-input-box">
                 <label>Initial Stock Qty *</label>
                 <input 
@@ -1082,19 +1108,36 @@ const AdminDashboard = () => {
                 <label>Category</label>
                 <select 
                   value={editProdCategory}
-                  onChange={(e) => setEditProdCategory(e.target.value)}
+                  onChange={(e) => {
+                    setEditProdCategory(e.target.value);
+                    setEditProdSubcategoryId('');
+                  }}
                   className="dialog-form-select"
                 >
-                  <option value="Appliances">Appliances</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Furniture">Furniture</option>
-                  <option value="Kitchenware">Kitchenware</option>
-                  <option value="Footwear">Footwear</option>
-                  <option value="Groceries">Groceries</option>
-                  <option value="Fashion">Fashion</option>
-                  <option value="Beauty">Beauty</option>
+                  <option value="">Select Category</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
                 </select>
               </div>
+              {editProdCategory && getSubcategoryFlatList(editProdCategory).length > 0 && (
+                <div className="form-input-box">
+                  <label>Subcategory</label>
+                  <select
+                    value={editProdSubcategoryId}
+                    onChange={(e) => setEditProdSubcategoryId(e.target.value)}
+                    className="dialog-form-select"
+                  >
+                    <option value="">Select Subcategory</option>
+                    {getSubcategoryFlatList(editProdCategory).map(sub => {
+                      const displayPath = sub.path.replace(`${editProdCategory} > `, '');
+                      return (
+                        <option key={sub.id} value={sub.id}>{displayPath}</option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
               <div className="form-input-box">
                 <label>Stock Qty</label>
                 <input 

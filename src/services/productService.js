@@ -7,8 +7,6 @@ const api = axios.create({
   }
 });
 
-import { MOCK_PRODUCTS } from '../data/products';
-
 const enrichProduct = (p) => {
   if (!p) return p;
 
@@ -185,12 +183,8 @@ export const productService = {
       const data = response.data?.products || response.data || [];
       return data.map(p => enrichProduct(p));
     } catch (err) {
-      console.warn('Axios API connection failed, returning fallback products list.', err.message);
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(MOCK_PRODUCTS.map(p => enrichProduct(p)));
-        }, 600); // Small delay to simulate loading/skeleton
-      });
+      console.error('Axios API connection failed fetching products:', err.message);
+      throw err;
     }
   },
 
@@ -201,18 +195,8 @@ export const productService = {
       const data = response.data?.product || response.data;
       return enrichProduct(data);
     } catch (err) {
-      console.warn(`Axios API connection failed, returning fallback product by ID: ${id}`, err.message);
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const product = MOCK_PRODUCTS.find(p => p.id === parseInt(id));
-          if (product) {
-            resolve(enrichProduct(product));
-          } else {
-            reject(new Error('Product not found in database.'));
-          }
-        }, 600); // Small delay to simulate loading/skeleton
-      });
+      console.error(`Axios API connection failed fetching product by ID: ${id}`, err.message);
+      throw err;
     }
   }
 };
-export { MOCK_PRODUCTS };

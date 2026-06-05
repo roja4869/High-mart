@@ -30,6 +30,29 @@ async function runMigration() {
       .map(q => q.trim())
       .filter(q => q.length > 0);
 
+    console.log("Dropping existing tables for clean migration...");
+    const tables = [
+      'inventory_logs',
+      'reviews',
+      'payments',
+      'order_items',
+      'orders',
+      'cart',
+      'wishlist',
+      'products',
+      'category_relationships',
+      'subcategories',
+      'users',
+      'categories'
+    ];
+    for (const table of tables) {
+      try {
+        await db.execute(`DROP TABLE IF EXISTS ${table}`);
+      } catch (err) {
+        console.warn(`Failed to drop table ${table}:`, err.message);
+      }
+    }
+
     console.log(`Executing ${queries.length} schema statements...`);
     
     // Run schema setup queries
@@ -63,6 +86,165 @@ async function runMigration() {
     }
     console.log(`Seeded ${categoryNames.length} categories.`);
 
+    // 2.1 Seed Subcategories & Relationships
+    const fashionCatId = categoryMap['Fashion'];
+    const leafSubcategoryMap = {};
+
+    const FASHION_SUBCATS = [
+      {
+        name: 'Clothing',
+        children: [
+          {
+            name: 'Men',
+            children: [
+              { name: 'T-Shirt' },
+              { name: 'Shirt' },
+              { name: 'Jeans' },
+              { name: 'Trousers' },
+              { name: 'Jacket' },
+              { name: 'Hoodie' }
+            ]
+          },
+          {
+            name: 'Women',
+            children: [
+              { name: 'Saree' },
+              { name: 'Kurti' },
+              { name: 'Dress' },
+              { name: 'Top' },
+              { name: 'Jeans' },
+              { name: 'Jacket' }
+            ]
+          },
+          {
+            name: 'Kids',
+            children: [
+              { name: 'Boys Wear' },
+              { name: 'Girls Wear' },
+              { name: 'School Uniform' },
+              { name: 'Party Wear' }
+            ]
+          }
+        ]
+      },
+      {
+        name: 'Footwear',
+        children: [
+          {
+            name: 'Men',
+            children: [
+              { name: 'Sports Shoes' },
+              { name: 'Sneakers' },
+              { name: 'Formal Shoes' },
+              { name: 'Sandals' }
+            ]
+          },
+          {
+            name: 'Women',
+            children: [
+              { name: 'Heels' },
+              { name: 'Flats' },
+              { name: 'Sneakers' },
+              { name: 'Sandals' }
+            ]
+          },
+          {
+            name: 'Kids',
+            children: [
+              { name: 'School Shoes' },
+              { name: 'Casual Shoes' },
+              { name: 'Sports Shoes' }
+            ]
+          }
+        ]
+      },
+      {
+        name: 'Eyewear',
+        children: [
+          {
+            name: 'Men',
+            children: [
+              { name: 'Sunglasses' },
+              { name: 'Reading Glasses' },
+              { name: 'Computer Glasses' }
+            ]
+          },
+          {
+            name: 'Women',
+            children: [
+              { name: 'Sunglasses' },
+              { name: 'Fashion Glasses' },
+              { name: 'Reading Glasses' }
+            ]
+          },
+          {
+            name: 'Kids',
+            children: [
+              { name: 'Sunglasses' },
+              { name: 'Protective Glasses' }
+            ]
+          }
+        ]
+      },
+      {
+        name: 'Bags',
+        children: [
+          { name: 'Men' },
+          { name: 'Women' },
+          { name: 'Kids' }
+        ]
+      },
+      {
+        name: 'Watches',
+        children: [
+          { name: 'Men' },
+          { name: 'Women' },
+          { name: 'Kids' }
+        ]
+      },
+      {
+        name: 'Accessories',
+        children: [
+          { name: 'Belt' },
+          { name: 'Cap' },
+          { name: 'Wallet' },
+          { name: 'Jewellery' },
+          { name: 'Hair Accessories' },
+          { name: 'Scarf' }
+        ]
+      }
+    ];
+
+    async function seedSubcategoryNode(node, parentId, parentType, mainCatId, currentPathList = []) {
+      const res = await db.execute({
+        sql: "INSERT INTO subcategories (category_id, name, description) VALUES (?, ?, ?) RETURNING id",
+        args: [mainCatId, node.name, `${node.name} subcategory`]
+      });
+      const subId = res.rows[0].id;
+      
+      await db.execute({
+        sql: "INSERT INTO category_relationships (parent_id, child_id, parent_type, child_type) VALUES (?, ?, ?, ?)",
+        args: [parentId, subId, parentType, 'subcategory']
+      });
+
+      const nextPathList = [...currentPathList, node.name];
+      const pathKey = nextPathList.join(' > ');
+      leafSubcategoryMap[pathKey] = subId;
+
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          await seedSubcategoryNode(child, subId, 'subcategory', mainCatId, nextPathList);
+        }
+      }
+    }
+
+    if (fashionCatId) {
+      for (const node of FASHION_SUBCATS) {
+        await seedSubcategoryNode(node, fashionCatId, 'category', fashionCatId, []);
+      }
+      console.log("Seeded Fashion subcategories and hierarchy relationships.");
+    }
+
     // 3. Seed Users (We use the actual data in users from mockDb.js)
     const userMap = {}; // mapping of old id -> new db id
     for (const u of users) {
@@ -79,15 +261,30 @@ async function runMigration() {
     const productMap = {}; // mapping of old id -> new db id
     for (const p of products) {
       const catId = categoryMap[p.category] || null;
+      let subcatId = null;
+
+      if (p.category === 'Fashion') {
+        let pathKey = null;
+        if (p.subCategory === 'Bags' || p.subCategory === 'Watches') {
+          pathKey = `${p.subCategory} > ${p.gender}`;
+        } else if (p.subCategory === 'Accessories') {
+          pathKey = `${p.subCategory} > ${p.productType}`;
+        } else {
+          pathKey = `${p.subCategory} > ${p.gender} > ${p.productType}`;
+        }
+        subcatId = leafSubcategoryMap[pathKey] || null;
+      }
+
       const result = await db.execute({
-        sql: `INSERT INTO products (id, name, description, price, category_id, image, stock, brand, discount, rating, reviewCount, sku, images, features, variants, specifications) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        sql: `INSERT INTO products (id, name, description, price, category_id, subcategory_id, image, stock, brand, discount, rating, reviewCount, sku, images, features, variants, specifications) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         args: [
           p.id,
           p.name,
           p.description || '',
           p.price,
           catId,
+          subcatId,
           p.image || (p.images && p.images[0]) || 'default_product.jpg',
           p.stock || 0,
           p.brand || '',
