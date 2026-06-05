@@ -7,8 +7,6 @@ const api = axios.create({
   }
 });
 
-import { MOCK_PRODUCTS } from '../data/products';
-
 const enrichProduct = (p) => {
   if (!p) return p;
 
@@ -181,12 +179,12 @@ export const productService = {
   // Fetch all products with filter parameters
   async getProducts(params = {}) {
     try {
-      const response = await api.get('/products', { params });
-      const data = response.data.products || response.data || [];
+      const response = await api.get('/products');
+      const data = response.data?.products || response.data || [];
       return data.map(p => enrichProduct(p));
     } catch (err) {
-      console.error('API request failed:', err);
-      throw err; // Propagate the error so the UI can show the error state
+      console.error('Axios API connection failed fetching products:', err.message);
+      throw err;
     }
   },
 
@@ -194,12 +192,11 @@ export const productService = {
   async getProductById(id) {
     try {
       const response = await api.get(`/products/${id}`);
-      const data = response.data.product || response.data;
+      const data = response.data?.product || response.data;
       return enrichProduct(data);
     } catch (err) {
-      console.error(`API request failed for product ID ${id}:`, err);
+      console.error(`Axios API connection failed fetching product by ID: ${id}`, err.message);
       throw err;
     }
   }
 };
-export { MOCK_PRODUCTS };

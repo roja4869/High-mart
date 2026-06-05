@@ -73,6 +73,17 @@ const Navbar = () => {
 
             {/* Navigation Links - Desktop */}
             <ul className="navbar-links-desktop">
+              {currentUser?.role === 'admin' && (
+                <li>
+                  <button 
+                    onClick={() => handleNavClick('admin', '/admin')} 
+                    className={`nav-link-btn ${activeNavbarTab === 'admin' && location.pathname === '/admin' ? 'active-link' : ''}`}
+                    style={{ color: '#a78bfa', fontWeight: 'bold' }}
+                  >
+                    Admin Panel
+                  </button>
+                </li>
+              )}
               <li>
                 <button 
                   onClick={() => handleNavClick('home', '/')} 
@@ -115,31 +126,35 @@ const Navbar = () => {
               </button>
 
               {/* Wishlist Link Icon */}
-              <Link 
-                to="/wishlist" 
-                className={`wishlist-icon-wrapper ${location.pathname === '/wishlist' ? 'active-action' : ''}`}
-                aria-label="View Wishlist"
-              >
-                <Heart size={20} className="wishlist-svg-icon" />
-                {wishlist.length > 0 && (
-                  <span className="wishlist-badge-count">{wishlist.length}</span>
-                )}
-              </Link>
+              {currentUser?.role !== 'admin' && (
+                <Link 
+                  to="/wishlist" 
+                  className={`wishlist-icon-wrapper ${location.pathname === '/wishlist' ? 'active-action' : ''}`}
+                  aria-label="View Wishlist"
+                >
+                  <Heart size={20} className="wishlist-svg-icon" />
+                  {wishlist.length > 0 && (
+                    <span className="wishlist-badge-count">{wishlist.length}</span>
+                  )}
+                </Link>
+              )}
 
               {/* Cart Icon Trigger */}
-              <Link 
-                to="/cart" 
-                onClick={handleCartClick} 
-                className={`cart-icon-wrapper-new ${location.pathname === '/cart' ? 'active-action' : ''}`}
-                aria-label="View Shopping Cart"
-              >
-                <ShoppingCart size={20} className="cart-svg-icon" />
-                {cartCount > 0 && (
-                  <span className="cart-badge-count-new animate-pop">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
+              {currentUser?.role !== 'admin' && (
+                <Link 
+                  to="/cart" 
+                  onClick={handleCartClick} 
+                  className={`cart-icon-wrapper-new ${location.pathname === '/cart' ? 'active-action' : ''}`}
+                  aria-label="View Shopping Cart"
+                >
+                  <ShoppingCart size={20} className="cart-svg-icon" />
+                  {cartCount > 0 && (
+                    <span className="cart-badge-count-new animate-pop">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {/* User Account avatar badge */}
               {currentUser && (
@@ -179,6 +194,11 @@ const Navbar = () => {
             <Search size={16} className="mobile-search-icon" />
           </div>
           <ul className="mobile-drawer-links">
+            {currentUser?.role === 'admin' && (
+              <li>
+                <Link to="/admin" onClick={() => setMobileMenuOpen(false)} style={{ color: '#a78bfa', fontWeight: 'bold' }}>Admin Panel</Link>
+              </li>
+            )}
             <li>
               <button onClick={() => handleNavClick('home', '/')} className="mobile-nav-btn">Home</button>
             </li>
@@ -191,20 +211,24 @@ const Navbar = () => {
             <li>
               <button onClick={() => handleNavClick('newArrivals', '/products')} className="mobile-nav-btn">New Arrivals</button>
             </li>
-            <li>
-              <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>Wishlist ({wishlist.length})</Link>
-            </li>
-            {currentUser && (
-              <li>
-                <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>Profile ({shortName})</Link>
-              </li>
+            {currentUser?.role !== 'admin' && (
+              <>
+                <li>
+                  <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>Wishlist ({wishlist.length})</Link>
+                </li>
+                {currentUser && (
+                  <li>
+                    <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>Profile ({shortName})</Link>
+                  </li>
+                )}
+                <li>
+                  <Link to="/cart" onClick={handleCartClick} className="mobile-cart-link">
+                    <span>Shopping Cart</span>
+                    {cartCount > 0 && <span className="mobile-cart-badge">{cartCount}</span>}
+                  </Link>
+                </li>
+              </>
             )}
-            <li>
-              <Link to="/cart" onClick={handleCartClick} className="mobile-cart-link">
-                <span>Shopping Cart</span>
-                {cartCount > 0 && <span className="mobile-cart-badge">{cartCount}</span>}
-              </Link>
-            </li>
           </ul>
         </div>
       )}

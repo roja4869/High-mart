@@ -1,5 +1,131 @@
 import { db } from '../data/db.js';
 
+// Helper to parse JSON string columns from SQLite/libSQL
+const formatProductRow = (row) => {
+  if (!row) return row;
+  const product = { ...row };
+  
+  try {
+    product.images = product.images ? JSON.parse(product.images) : [];
+  } catch (e) {
+    product.images = [];
+  }
+  try {
+    product.features = product.features ? JSON.parse(product.features) : [];
+  } catch (e) {
+    product.features = [];
+  }
+  try {
+    product.variants = product.variants ? JSON.parse(product.variants) : {};
+  } catch (e) {
+    product.variants = {};
+  }
+  try {
+    product.specifications = product.specifications ? JSON.parse(product.specifications) : {};
+  } catch (e) {
+    product.specifications = {};
+  }
+  
+  // Compute stockStatus and stockCount expected by the client
+  product.stockCount = product.stock;
+  if (product.stock <= 0) {
+    product.stockStatus = 'Out of Stock';
+  } else if (product.stock <= 5) {
+    product.stockStatus = 'Low Stock';
+  } else {
+    product.stockStatus = 'In Stock';
+  }
+
+  // Ensure there is at least one image in images array
+  if (!product.images || product.images.length === 0) {
+    product.images = [product.image ? (product.image.startsWith('http') ? product.image : `/uploads/${product.image}`) : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'];
+  }
+  
+  return product;
+};
+
+// Helper to construct subcategory path mappings dynamically
+const getCategoryPathMap = async () => {
+  try {
+    const categories = (await db.execute("SELECT id, name FROM categories")).rows;
+    const subcategories = (await db.execute("SELECT id, name, category_id FROM subcategories")).rows;
+    const relationships = (await db.execute("SELECT parent_id, child_id, parent_type, child_type FROM category_relationships")).rows;
+
+    const nodes = {};
+    categories.forEach(cat => {
+      nodes[`category_${cat.id}`] = { name: cat.name, type: 'category', children: [] };
+    });
+    subcategories.forEach(sub => {
+      nodes[`subcategory_${sub.id}`] = { name: sub.name, type: 'subcategory', children: [] };
+    });
+
+    const childKeys = new Set();
+    relationships.forEach(rel => {
+      const parentKey = `${rel.parent_type}_${rel.parent_id}`;
+      const childKey = `${rel.child_type}_${rel.child_id}`;
+      if (nodes[parentKey] && nodes[childKey]) {
+        nodes[parentKey].children.push(childKey);
+        childKeys.add(childKey);
+      }
+    });
+
+    const pathMap = {};
+    const rootCategoryMap = {};
+
+    const traverse = (nodeKey, parentPathList = [], rootCatName = '') => {
+      const node = nodes[nodeKey];
+      if (!node) return;
+
+      const nextPathList = [...parentPathList, node.name];
+      const currentRoot = node.type === 'category' ? node.name : rootCatName;
+
+      if (node.type === 'subcategory') {
+        const numericId = parseInt(nodeKey.split('_')[1]);
+        pathMap[numericId] = nextPathList.slice(1);
+        rootCategoryMap[numericId] = currentRoot;
+      }
+
+      if (node.children) {
+        node.children.forEach(childKey => traverse(childKey, nextPathList, currentRoot));
+      }
+    };
+
+    const roots = Object.keys(nodes).filter(key => !childKeys.has(key));
+    roots.forEach(key => traverse(key, [], nodes[key].name));
+
+    return { pathMap, rootCategoryMap };
+  } catch (err) {
+    console.error("Error building category path map:", err.message);
+    return { pathMap: {}, rootCategoryMap: {} };
+  }
+};
+
+const enrichProduct = (product, pathMap, rootCategoryMap) => {
+  if (!product) return product;
+
+  let subCategory = null;
+  let gender = null;
+  let productType = null;
+
+  if (product.subcategory_id && pathMap[product.subcategory_id]) {
+    const pathParts = pathMap[product.subcategory_id];
+    subCategory = pathParts[0] || null;
+    gender = pathParts[1] || null;
+    productType = pathParts[2] || null;
+    
+    if (rootCategoryMap[product.subcategory_id]) {
+      product.category = rootCategoryMap[product.subcategory_id];
+    }
+  }
+
+  return {
+    ...product,
+    subCategory,
+    gender,
+    productType
+  };
+};
+
 /**
  * @desc    Get all products
  * @route   GET /api/products
@@ -61,6 +187,11 @@ export const getProducts = async (req, res, next) => {
     }
 
     const result = await db.execute({ sql, args });
+    const formattedProducts = result.rows.map(row => formatProductRow(row));
+
+    // Enrich with dynamic subcategory hierarchies
+    const { pathMap, rootCategoryMap } = await getCategoryPathMap();
+    const enriched = formattedProducts.map(p => enrichProduct(p, pathMap, rootCategoryMap));
 
     const products = result.rows.map(row => {
       let subCategory = null;
@@ -95,8 +226,8 @@ export const getProducts = async (req, res, next) => {
 
     res.json({
       success: true,
-      count: products.length,
-      products
+      count: enriched.length,
+      products: enriched
     });
   } catch (error) {
     console.error("Error in getProducts controller:", error);
@@ -139,36 +270,32 @@ export const getProductById = async (req, res, next) => {
       throw new Error(`Product with ID ${req.params.id} not found`);
     }
 
-    let subCategory = null;
-    let gender = null;
-    let productType = null;
+    // Fetch reviews for this product
+    const reviewsResult = await db.execute({
+      sql: `
+        SELECT r.id, u.name, r.rating as stars, r.comment, r.created_at as date
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.product_id = ?
+        ORDER BY r.created_at DESC
+      `,
+      args: [id]
+    });
+    
+    const reviews = reviewsResult.rows.map(rev => ({
+      ...rev,
+      avatar: 'https://images.unsplash.com/photo-1500048993953-d23a436266cf?w=100&q=80'
+    }));
 
-    if (row.s3_name) {
-      subCategory = row.s3_name;
-      gender = row.s2_name;
-      productType = row.s1_name;
-    } else if (row.s2_name) {
-      subCategory = row.s2_name;
-      if (['Men', 'Women', 'Kids'].includes(row.s1_name)) {
-        gender = row.s1_name;
-      } else {
-        productType = row.s1_name;
-      }
-    } else if (row.s1_name) {
-      subCategory = row.s1_name;
-    }
-
-    const { s1_name, s2_name, s3_name, ...cleanRow } = row;
-    const product = {
-      ...cleanRow,
-      subCategory,
-      gender,
-      productType
-    };
+    const formatted = formatProductRow(product);
+    const enriched = enrichProduct(formatted, pathMap, rootCategoryMap);
 
     res.json({
       success: true,
-      product
+      product: {
+        ...enriched,
+        reviews
+      }
     });
   } catch (error) {
     console.error(`Error in getProductById controller for ID ${req.params.id}:`, error);
@@ -183,7 +310,7 @@ export const getProductById = async (req, res, next) => {
  */
 export const createProduct = async (req, res, next) => {
   try {
-    const { name, description, price, category, stock } = req.body;
+    const { name, description, price, category, subcategory_id, stock } = req.body;
 
     if (!name || !price || !category || stock === undefined) {
       res.status(400);
@@ -192,6 +319,7 @@ export const createProduct = async (req, res, next) => {
 
     const priceNum = parseFloat(price);
     const stockNum = parseInt(stock);
+    const subcatId = subcategory_id ? parseInt(subcategory_id) : null;
 
     if (isNaN(priceNum) || priceNum <= 0) {
       res.status(400);
@@ -227,10 +355,10 @@ export const createProduct = async (req, res, next) => {
     // Insert Product
     const insertResult = await db.execute({
       sql: `
-        INSERT INTO products (name, description, price, category_id, image, stock)
-        VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+        INSERT INTO products (name, description, price, category_id, subcategory_id, image, stock)
+        VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id
       `,
-      args: [name, description || '', priceNum, categoryId, image, stockNum]
+      args: [name, description || '', priceNum, categoryId, subcatId, image, stockNum]
     });
 
     const newProductId = insertResult.rows[0].id;
@@ -257,10 +385,13 @@ export const createProduct = async (req, res, next) => {
       args: [newProductId]
     });
 
+    const { pathMap, rootCategoryMap } = await getCategoryPathMap();
+    const enriched = enrichProduct(finalResult.rows[0], pathMap, rootCategoryMap);
+
     res.status(201).json({
       success: true,
       message: 'Product created successfully',
-      product: finalResult.rows[0]
+      product: enriched
     });
   } catch (error) {
     next(error);
@@ -288,7 +419,7 @@ export const updateProduct = async (req, res, next) => {
       throw new Error(`Product with ID ${req.params.id} not found`);
     }
 
-    const { name, description, price, category, stock } = req.body;
+    const { name, description, price, category, subcategory_id, stock } = req.body;
 
     let categoryId = currentProduct.category_id;
     if (category !== undefined) {
@@ -308,6 +439,11 @@ export const updateProduct = async (req, res, next) => {
         });
         categoryId = newCatResult.rows[0].id;
       }
+    }
+
+    let subcatId = currentProduct.subcategory_id;
+    if (subcategory_id !== undefined) {
+      subcatId = subcategory_id ? parseInt(subcategory_id) : null;
     }
 
     const updatedName = name !== undefined ? name : currentProduct.name;
@@ -349,10 +485,10 @@ export const updateProduct = async (req, res, next) => {
     await db.execute({
       sql: `
         UPDATE products 
-        SET name = ?, description = ?, price = ?, category_id = ?, image = ?, stock = ?, updated_at = CURRENT_TIMESTAMP
+        SET name = ?, description = ?, price = ?, category_id = ?, subcategory_id = ?, image = ?, stock = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
-      args: [updatedName, updatedDesc, priceNum, categoryId, updatedImage, stockNum, id]
+      args: [updatedName, updatedDesc, priceNum, categoryId, subcatId, updatedImage, stockNum, id]
     });
 
     // Fetch updated product with category
@@ -366,10 +502,13 @@ export const updateProduct = async (req, res, next) => {
       args: [id]
     });
 
+    const { pathMap, rootCategoryMap } = await getCategoryPathMap();
+    const enriched = enrichProduct(finalResult.rows[0], pathMap, rootCategoryMap);
+
     res.json({
       success: true,
       message: 'Product updated successfully',
-      product: finalResult.rows[0]
+      product: enriched
     });
   } catch (error) {
     next(error);

@@ -4,14 +4,23 @@ import { db } from '../data/db.js';
 const getUserCart = async (userId) => {
   const result = await db.execute({
     sql: `
-      SELECT c.product_id as productId, p.name, p.price, p.image, c.quantity 
+      SELECT c.product_id as productId, p.name, p.price, p.image, c.quantity, p.discount, p.rating, c2.name as category, p.brand
       FROM cart c 
       JOIN products p ON c.product_id = p.id 
+      LEFT JOIN categories c2 ON p.category_id = c2.id
       WHERE c.user_id = ?
     `,
     args: [userId]
   });
-  return result.rows;
+  return result.rows.map(row => {
+    const isFullUrl = row.image && (row.image.startsWith('http://') || row.image.startsWith('https://'));
+    return {
+      ...row,
+      image: isFullUrl ? row.image : `/uploads/${row.image}`,
+      discount: row.discount || 0,
+      rating: row.rating || 0.0
+    };
+  });
 };
 
 /**
@@ -21,6 +30,10 @@ const getUserCart = async (userId) => {
  */
 export const getCart = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot view or manage a shopping cart');
+    }
     const userId = req.user.id;
     const cart = await getUserCart(userId);
     
@@ -40,6 +53,10 @@ export const getCart = async (req, res, next) => {
  */
 export const addToCart = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot book or purchase products');
+    }
     const userId = req.user.id;
     const { productId, quantity } = req.body;
 
@@ -90,9 +107,16 @@ export const addToCart = async (req, res, next) => {
         args: [targetQty, userId, prodIdNum]
       });
     } else {
-      // Add new cart item
+      // Add new cart item with ON CONFLICT resolution for concurrent requests
       await db.execute({
-        sql: "INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?)",
+        sql: `
+          INSERT INTO cart (user_id, product_id, quantity) 
+          VALUES (?, ?, ?)
+          ON CONFLICT(user_id, product_id) 
+          DO UPDATE SET 
+            quantity = quantity + excluded.quantity,
+            updated_at = CURRENT_TIMESTAMP
+        `,
         args: [userId, prodIdNum, qtyNum]
       });
     }
@@ -116,6 +140,10 @@ export const addToCart = async (req, res, next) => {
  */
 export const updateCartQuantity = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot manage a shopping cart');
+    }
     const userId = req.user.id;
     const productId = parseInt(req.params.id);
     const { quantity } = req.body;
@@ -181,6 +209,10 @@ export const updateCartQuantity = async (req, res, next) => {
  */
 export const removeFromCart = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot manage a shopping cart');
+    }
     const userId = req.user.id;
     const productId = parseInt(req.params.id);
 
@@ -207,6 +239,29 @@ export const removeFromCart = async (req, res, next) => {
       success: true,
       message: 'Product removed from cart successfully',
       cart: updatedCart
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Clear entire cart
+ * @route   DELETE /api/cart
+ * @access  Private
+ */
+export const clearCart = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    await db.execute({
+      sql: "DELETE FROM cart WHERE user_id = ?",
+      args: [userId]
+    });
+
+    res.json({
+      success: true,
+      message: 'Cart cleared successfully',
+      cart: []
     });
   } catch (error) {
     next(error);
