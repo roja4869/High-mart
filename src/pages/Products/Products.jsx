@@ -8,9 +8,86 @@ import { AppContext } from '../../App';
 import { CartContext } from '../../context/CartContext';
 import './Products.css';
 
+const CATEGORY_IDS = {
+  'electronics': 1,
+  'fashion': 2,
+  'groceries': 3,
+  'home & kitchen': 4,
+  'beauty': 5,
+  'toys': 6,
+  'books': 7,
+  'sports': 8
+};
+
+const SUBCATEGORY_IDS = {
+  'Fashion > Clothing': 1,
+  'Fashion > Clothing > Men': 2,
+  'Fashion > Clothing > Men > T-Shirt': 3,
+  'Fashion > Clothing > Men > Shirt': 4,
+  'Fashion > Clothing > Men > Jeans': 5,
+  'Fashion > Clothing > Men > Trousers': 6,
+  'Fashion > Clothing > Men > Jacket': 7,
+  'Fashion > Clothing > Men > Hoodie': 8,
+  'Fashion > Clothing > Women': 9,
+  'Fashion > Clothing > Women > Saree': 10,
+  'Fashion > Clothing > Women > Kurti': 11,
+  'Fashion > Clothing > Women > Dress': 12,
+  'Fashion > Clothing > Women > Top': 13,
+  'Fashion > Clothing > Women > Jeans': 14,
+  'Fashion > Clothing > Women > Jacket': 15,
+  'Fashion > Clothing > Kids': 16,
+  'Fashion > Clothing > Kids > Boys Wear': 17,
+  'Fashion > Clothing > Kids > Girls Wear': 18,
+  'Fashion > Clothing > Kids > School Uniform': 19,
+  'Fashion > Clothing > Kids > Party Wear': 20,
+  'Fashion > Footwear': 21,
+  'Fashion > Footwear > Men': 22,
+  'Fashion > Footwear > Men > Sports Shoes': 23,
+  'Fashion > Footwear > Men > Sneakers': 24,
+  'Fashion > Footwear > Men > Formal Shoes': 25,
+  'Fashion > Footwear > Men > Sandals': 26,
+  'Fashion > Footwear > Women': 27,
+  'Fashion > Footwear > Women > Heels': 28,
+  'Fashion > Footwear > Women > Flats': 29,
+  'Fashion > Footwear > Women > Sneakers': 30,
+  'Fashion > Footwear > Women > Sandals': 31,
+  'Fashion > Footwear > Kids': 32,
+  'Fashion > Footwear > Kids > School Shoes': 33,
+  'Fashion > Footwear > Kids > Casual Shoes': 34,
+  'Fashion > Footwear > Kids > Sports Shoes': 35,
+  'Fashion > Eyewear': 36,
+  'Fashion > Eyewear > Men': 37,
+  'Fashion > Eyewear > Men > Sunglasses': 38,
+  'Fashion > Eyewear > Men > Reading Glasses': 39,
+  'Fashion > Eyewear > Men > Computer Glasses': 40,
+  'Fashion > Eyewear > Women': 41,
+  'Fashion > Eyewear > Women > Sunglasses': 42,
+  'Fashion > Eyewear > Women > Fashion Glasses': 43,
+  'Fashion > Eyewear > Women > Reading Glasses': 44,
+  'Fashion > Eyewear > Kids': 45,
+  'Fashion > Eyewear > Kids > Sunglasses': 46,
+  'Fashion > Eyewear > Kids > Protective Glasses': 47,
+  'Fashion > Bags': 48,
+  'Fashion > Bags > Men': 49,
+  'Fashion > Bags > Women': 50,
+  'Fashion > Bags > Kids': 51,
+  'Fashion > Watches': 52,
+  'Fashion > Watches > Men': 53,
+  'Fashion > Watches > Women': 54,
+  'Fashion > Watches > Kids': 55,
+  'Fashion > Accessories': 56,
+  'Fashion > Accessories > Belt': 57,
+  'Fashion > Accessories > Cap': 58,
+  'Fashion > Accessories > Wallet': 59,
+  'Fashion > Accessories > Jewellery': 60,
+  'Fashion > Accessories > Hair Accessories': 61,
+  'Fashion > Accessories > Scarf': 62
+};
+
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedProductForPreview, setSelectedProductForPreview] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
@@ -39,23 +116,42 @@ const Products = () => {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [selectedGenders, setSelectedGenders] = useState([]);
 
-  // Load products on mount
+  // Load products when active filters change
   useEffect(() => {
     const loadProducts = async () => {
       setIsLoading(true);
+      setError(null);
+      
+      const params = {};
+      if (selectedCategories && selectedCategories.length > 0) {
+        const activePath = selectedCategories[0];
+        console.log("Fetching for active category path:", activePath);
+        
+        if (activePath.includes(' > ')) {
+          const parts = activePath.split(' > ');
+          const catName = parts[0].trim();
+          params.category_id = CATEGORY_IDS[catName.toLowerCase()] || null;
+          params.subcategory_id = SUBCATEGORY_IDS[activePath] || null;
+        } else {
+          params.category_id = CATEGORY_IDS[activePath.toLowerCase()] || null;
+        }
+      }
+      
+      console.log("Sending API request with params:", params);
       try {
-        const response = await productService.getProducts();
+        const response = await productService.getProducts(params);
         if (response) {
           setProducts(response);
         }
       } catch (err) {
         console.error('Failed to load products service records:', err);
+        setError('Failed to fetch products from server. Please check your connection.');
       } finally {
         setIsLoading(false);
       }
     };
     loadProducts();
-  }, []);
+  }, [selectedCategories]);
 
   // Parse category search query param on mount
   useEffect(() => {
@@ -83,6 +179,21 @@ const Products = () => {
   const handlePreviewProduct = (product) => {
     setSelectedProductForPreview(product);
     setIsPreviewOpen(true);
+  };
+
+  const getEmptyStateText = () => {
+    if (selectedCategories.length > 0) {
+      const activePath = selectedCategories[0];
+      if (activePath.includes(' > ')) {
+        const parts = activePath.split(' > ');
+        const subcatName = parts[parts.length - 1];
+        if (subcatName.toLowerCase() === 'clothing' || subcatName.toLowerCase() === 'clothes') {
+          return 'No clothes products found';
+        }
+        return `No ${subcatName.toLowerCase()} products found`;
+      }
+    }
+    return "We couldn't find any products matching your current catalog filters. Try resetting filters.";
   };
 
   // Reset Filters
@@ -249,24 +360,30 @@ const Products = () => {
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="products-grid-layout">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div key={idx} className="skeleton-product-card glass-effect pulse">
-                  <div className="skeleton-image"></div>
-                  <div className="skeleton-details">
-                    <div className="skeleton-line short"></div>
-                    <div className="skeleton-line long"></div>
-                    <div className="skeleton-line medium"></div>
-                  </div>
-                </div>
-              ))}
+          {error ? (
+            <div className="error-message-wrapper glass-effect animate-fade-in">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="error-icon"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <h3>Unable to Load Products</h3>
+              <p>{error}</p>
+              <button 
+                onClick={() => {
+                  setSelectedCategories([...selectedCategories]); // triggers reload
+                }} 
+                className="retry-btn"
+              >
+                Retry
+              </button>
+            </div>
+          ) : isLoading ? (
+            <div className="loading-spinner-wrapper">
+              <div className="loading-spinner"></div>
+              <p>Fetching products...</p>
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="no-matches-wrapper glass-effect animate-fade-in">
               <SlidersHorizontal size={40} className="no-matches-icon" />
               <h3>No Matches Found</h3>
-              <p>We couldn't find any products matching your current catalog filters. Try resetting filters.</p>
+              <p>{getEmptyStateText()}</p>
               <button 
                 onClick={handleResetFilters} 
                 className="reset-filters-btn"

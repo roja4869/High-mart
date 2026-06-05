@@ -176,8 +176,8 @@ const enrichProduct = (p) => {
 };
 
 export const productService = {
-  // Fetch all products
-  async getProducts() {
+  // Fetch all products with filter parameters
+  async getProducts(params = {}) {
     try {
       const response = await api.get('/products');
       const data = response.data?.products || response.data || [];

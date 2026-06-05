@@ -118,6 +118,16 @@ const App = () => {
     setCurrentUser(null);
   };
 
+  const user = currentUser;
+  const setUser = setCurrentUser;
+
+  const logout = () => {
+    authService.logout();
+    setCurrentUser(null);
+  };
+
+  const updateCartQuantity = updateQuantity;
+
   const syncCart = async () => {
     // 1. Sync cart
     await syncCartWithBackend();
