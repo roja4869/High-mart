@@ -7,8 +7,6 @@ const api = axios.create({
   }
 });
 
-import { MOCK_PRODUCTS } from '../data/products';
-
 const enrichProduct = (p) => {
   if (!p) return p;
 
@@ -182,55 +180,11 @@ export const productService = {
   async getProducts() {
     try {
       const response = await api.get('/products');
-<<<<<<< HEAD
-      const data = response.data.products || response.data || [];
-      return data.map(p => enrichProduct(p));
-=======
       const data = response.data?.products || response.data || [];
-      return data.map(p => {
-        let parsedImages = p.images;
-        if (typeof p.images === 'string') {
-          try {
-            parsedImages = JSON.parse(p.images);
-          } catch (e) {
-            parsedImages = [p.image];
-          }
-        }
-        let parsedFeatures = p.features;
-        if (typeof p.features === 'string') {
-          try {
-            parsedFeatures = JSON.parse(p.features);
-          } catch (e) {}
-        }
-        let parsedVariants = p.variants;
-        if (typeof p.variants === 'string') {
-          try {
-            parsedVariants = JSON.parse(p.variants);
-          } catch (e) {}
-        }
-        let parsedSpecs = p.specifications;
-        if (typeof p.specifications === 'string') {
-          try {
-            parsedSpecs = JSON.parse(p.specifications);
-          } catch (e) {}
-        }
-        return {
-          ...p,
-          images: parsedImages || [p.image],
-          image: p.image || (parsedImages && parsedImages[0]),
-          features: parsedFeatures || [],
-          variants: parsedVariants || { colors: [], storages: [] },
-          specifications: parsedSpecs || {}
-        };
-      });
->>>>>>> e560612e57e58c71f1b9990edf2b343bfacf1b55
+      return data.map(p => enrichProduct(p));
     } catch (err) {
-      console.warn('Axios API connection failed, returning fallback products list.', err.message);
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(MOCK_PRODUCTS.map(p => enrichProduct(p)));
-        }, 600); // Small delay to simulate loading/skeleton
-      });
+      console.error('Axios API connection failed fetching products:', err.message);
+      throw err;
     }
   },
 
@@ -238,61 +192,11 @@ export const productService = {
   async getProductById(id) {
     try {
       const response = await api.get(`/products/${id}`);
-<<<<<<< HEAD
-      const data = response.data.product || response.data;
-      return enrichProduct(data);
-=======
       const data = response.data?.product || response.data;
-      
-      let parsedImages = data.images;
-      if (typeof data.images === 'string') {
-        try {
-          parsedImages = JSON.parse(data.images);
-        } catch (e) {
-          parsedImages = [data.image];
-        }
-      }
-      let parsedFeatures = data.features;
-      if (typeof data.features === 'string') {
-        try {
-          parsedFeatures = JSON.parse(data.features);
-        } catch (e) {}
-      }
-      let parsedVariants = data.variants;
-      if (typeof data.variants === 'string') {
-        try {
-          parsedVariants = JSON.parse(data.variants);
-        } catch (e) {}
-      }
-      let parsedSpecs = data.specifications;
-      if (typeof data.specifications === 'string') {
-        try {
-          parsedSpecs = JSON.parse(data.specifications);
-        } catch (e) {}
-      }
-      
-      return {
-        ...data,
-        images: parsedImages || [data.image],
-        image: data.image || (parsedImages && parsedImages[0]),
-        features: parsedFeatures || [],
-        variants: parsedVariants || { colors: [], storages: [] },
-        specifications: parsedSpecs || {}
-      };
->>>>>>> e560612e57e58c71f1b9990edf2b343bfacf1b55
+      return enrichProduct(data);
     } catch (err) {
-      console.warn(`Axios API connection failed, returning fallback product by ID: ${id}`, err.message);
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const product = MOCK_PRODUCTS.find(p => p.id === parseInt(id));
-          if (product) {
-            resolve(enrichProduct(product));
-          } else {
-            reject(new Error('Product not found in database.'));
-          }
-        }, 600); // Small delay to simulate loading/skeleton
-      });
+      console.error(`Axios API connection failed fetching product by ID: ${id}`, err.message);
+      throw err;
     }
   }
 };
-export { MOCK_PRODUCTS };
