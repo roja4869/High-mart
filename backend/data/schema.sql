@@ -1,6 +1,17 @@
 -- Enable foreign key support (SQLite/libSQL specific)
 PRAGMA foreign_keys = ON;
 
+-- Drop tables if they exist to allow clean migrations
+DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS cart;
+DROP TABLE IF EXISTS inventory_logs;
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS users;
+
 -- 1. Categories Table
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,6 +64,15 @@ CREATE TABLE IF NOT EXISTS products (
   subcategory_id INTEGER REFERENCES subcategories(id) ON DELETE SET NULL,
   image TEXT DEFAULT 'default_product.jpg',
   stock INTEGER NOT NULL DEFAULT 0 CHECK(stock >= 0),
+  brand TEXT,
+  discount REAL DEFAULT 0,
+  rating REAL DEFAULT 0.0,
+  reviewCount INTEGER DEFAULT 0,
+  sku TEXT,
+  images TEXT,
+  features TEXT,
+  variants TEXT,
+  specifications TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

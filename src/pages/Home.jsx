@@ -33,7 +33,8 @@ const REVIEWS = [
 const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addToCart, toggleWishlist, wishlist, addToast } = useContext(AppContext);
+  const { addToCart, toggleWishlist, wishlist, addToast, user } = useContext(AppContext);
+  const isAdmin = user?.role === 'admin';
   const [productsList, setProductsList] = useState([]);
   const [categories, setCategories] = useState([]);
   console.log("[RENDER] Home Component", location);
@@ -261,13 +262,15 @@ const Home = () => {
                   <div className="product-badges">
                     <span className="discount-badge">-{product.discount}%</span>
                   </div>
-                  <button 
-                    onClick={() => toggleWishlist(product)}
-                    className={`wishlist-toggle-btn ${isWishlisted ? 'active' : ''}`}
-                    aria-label="Add to Wishlist"
-                  >
-                    <Heart size={16} fill={isWishlisted ? '#f43f5e' : 'none'} />
-                  </button>
+                  {!isAdmin && (
+                    <button 
+                      onClick={() => toggleWishlist(product)}
+                      className={`wishlist-toggle-btn ${isWishlisted ? 'active' : ''}`}
+                      aria-label="Add to Wishlist"
+                    >
+                      <Heart size={16} fill={isWishlisted ? '#f43f5e' : 'none'} />
+                    </button>
+                  )}
                 </div>
 
                 {/* Details */}
@@ -291,13 +294,19 @@ const Home = () => {
                       <span className="current-price">₹{(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
                       <span className="old-price">₹{product.price.toFixed(2)}</span>
                     </div>
-                    <button 
-                      onClick={() => addToCart(product)}
-                      className="add-to-cart-btn"
-                      aria-label="Add product to Cart"
-                    >
-                      <ShoppingCart size={16} />
-                    </button>
+                    {isAdmin ? (
+                      <span className="admin-view-badge" style={{ fontSize: '11px', padding: '3px 6px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.2)', fontWeight: 'bold' }}>
+                        Monitoring
+                      </span>
+                    ) : (
+                      <button 
+                        onClick={() => addToCart(product)}
+                        className="add-to-cart-btn"
+                        aria-label="Add product to Cart"
+                      >
+                        <ShoppingCart size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

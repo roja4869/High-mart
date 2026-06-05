@@ -5,11 +5,13 @@ import { Star, ShoppingCart, Heart, Eye } from 'lucide-react';
 import './ProductCard.css';
 
 const ProductCard = ({ product, onPreview }) => {
-  const { addToCart } = useContext(CartContext);
-  const { toggleWishlist, wishlist } = useContext(AppContext);
+  const { cart, addToCart, updateQuantity, removeFromCart } = useContext(CartContext);
+  const { toggleWishlist, wishlist, user } = useContext(AppContext);
 
   const isWishlisted = wishlist.some(item => item.id === product.id);
   const finalPrice = product.price * (1 - (product.discountPercentage || 0) / 100);
+  const cartItem = cart.find(item => item.id === product.id);
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="product-card-container glass-effect animate-fade-in">
@@ -25,16 +27,18 @@ const ProductCard = ({ product, onPreview }) => {
         )}
         
         {/* Wishlist Heart Toggle */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleWishlist(product);
-          }}
-          className={`product-wishlist-btn ${isWishlisted ? 'active' : ''}`}
-          aria-label="Toggle Wishlist"
-        >
-          <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} stroke={isWishlisted ? '#ef4444' : '#64748b'} />
-        </button>
+        {!isAdmin && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(product);
+            }}
+            className={`product-wishlist-btn ${isWishlisted ? 'active' : ''}`}
+            aria-label="Toggle Wishlist"
+          >
+            <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} stroke={isWishlisted ? '#ef4444' : '#64748b'} />
+          </button>
+        )}
 
         {/* Quick View Hover Overlay */}
         <div className="product-quickview-overlay">
@@ -89,13 +93,50 @@ const ProductCard = ({ product, onPreview }) => {
               <span className="price-old">₹{product.price.toFixed(2)}</span>
             )}
           </div>
-          <button 
-            onClick={() => addToCart(product)} 
-            className="product-add-cart-circle-btn"
-            aria-label={`Add ${product.name} to shopping cart`}
-          >
-            <ShoppingCart size={18} />
-          </button>
+          {isAdmin ? (
+            <span className="admin-view-badge" style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.2)', fontWeight: 'bold' }}>
+              Monitoring
+            </span>
+          ) : cartItem ? (
+            <div className="product-qty-selector">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (cartItem.quantity <= 1) {
+                    removeFromCart(product.id);
+                  } else {
+                    updateQuantity(product.id, cartItem.quantity - 1);
+                  }
+                }} 
+                className="qty-adjust-btn"
+                aria-label="Decrease quantity"
+              >
+                -
+              </button>
+              <span className="qty-display">{cartItem.quantity}</span>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateQuantity(product.id, cartItem.quantity + 1);
+                }} 
+                className="qty-adjust-btn"
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(product);
+              }} 
+              className="product-add-cart-circle-btn"
+              aria-label={`Add ${product.name} to shopping cart`}
+            >
+              <ShoppingCart size={18} />
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -54,7 +54,7 @@ class ErrorBoundary extends React.Component {
 
 const App = () => {
   // Consume CartContext values
-  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast, updateQuantity: updateCartQuantity, syncCartWithBackend } = useContext(CartContext);
+  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast, updateQuantity, syncCartWithBackend } = useContext(CartContext);
 
   // 1. Theme State
   const [theme, setTheme] = useState(() => {
@@ -152,6 +152,12 @@ const App = () => {
   }, [wishlist]);
 
   const toggleWishlist = async (product) => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser?.role === 'admin') {
+      addToast('Monitoring Mode: Administrators cannot use the wishlist feature.', 'error');
+      return;
+    }
+
     if (!product || !product.id) return;
     const token = localStorage.getItem('highMartToken');
 
@@ -192,13 +198,13 @@ const App = () => {
       <AppContext.Provider value={{
         theme,
         toggleTheme,
-        user,
-        setUser,
+        user: currentUser,
+        setUser: setCurrentUser,
         logout,
         cart,
         addToCart,
+        updateCartQuantity: updateQuantity,
         removeFromCart,
-        updateCartQuantity,
         clearCart,
         wishlist,
         setWishlist,

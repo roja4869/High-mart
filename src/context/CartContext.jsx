@@ -1,10 +1,20 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { authService } from '../services/authService';
 import { cartService } from '../services/cartService';
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const localData = localStorage.getItem('highMartCart');
+      return localData ? JSON.parse(localData) : [];
+    } catch (e) {
+      console.error('Failed to parse cart data from LocalStorage:', e);
+      return [];
+    }
+  });
+
   const [toasts, setToasts] = useState([]);
 
   const addToast = (message, type = 'success') => {
@@ -15,43 +25,30 @@ export const CartProvider = ({ children }) => {
     }, 3500);
   };
 
-  // Load initial cart
-  useEffect(() => {
-    const loadInitialCart = async () => {
-      const token = localStorage.getItem('highMartToken');
-      if (token) {
-        try {
-          const response = await cartService.getCart();
-          if (response && response.cart) {
-            setCart(response.cart);
-          }
-        } catch (e) {
-          console.error('Failed to load cart from backend:', e);
-        }
-      } else {
-        try {
-          const localData = localStorage.getItem('highMartCart');
-          setCart(localData ? JSON.parse(localData) : []);
-        } catch (e) {
-          console.error('Failed to parse cart data from LocalStorage:', e);
-          setCart([]);
-        }
-      }
-    };
-    loadInitialCart();
-  }, []);
-
-  // Save guest cart to LocalStorage only if guest
-  useEffect(() => {
-    const token = localStorage.getItem('highMartToken');
-    if (!token) {
+  const syncCart = async () => {
+    if (authService.isAuthenticated()) {
       try {
-        localStorage.setItem('highMartCart', JSON.stringify(cart));
-      } catch (e) {
-        console.error('Failed to save cart data to LocalStorage:', e);
+        const response = await cartService.getCart();
+        if (response.success) {
+          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
+          setCart(mapped);
+        }
+      } catch (err) {
+        console.warn("Could not sync cart with server:", err.message);
+        if (err.response?.status === 401) {
+          authService.logout();
+          setCart([]);
+          addToast("Session expired. Please sign in again.", "error");
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
       }
+    } else {
+      const local = localStorage.getItem('highMartCart');
+      setCart(local ? JSON.parse(local) : []);
     }
-  }, [cart]);
+  };
 
   const syncCartWithBackend = async () => {
     const token = localStorage.getItem('highMartToken');
@@ -70,31 +67,62 @@ export const CartProvider = ({ children }) => {
 
       const response = await cartService.getCart();
       if (response && response.cart) {
-        setCart(response.cart);
+        const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
+        setCart(mapped);
       }
     } catch (e) {
       console.error('Error syncing cart with backend:', e);
     }
   };
 
+  // Run initial sync on mount
+  useEffect(() => {
+    syncCart();
+  }, []);
+
+  // Save local cart for guest users when cart state changes
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      try {
+        localStorage.setItem('highMartCart', JSON.stringify(cart));
+      } catch (e) {
+        console.error('Failed to save cart data to LocalStorage:', e);
+      }
+    }
+  }, [cart]);
+
   const addToCart = async (product) => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser?.role === 'admin') {
+      addToast('Monitoring Mode: Administrators cannot book or purchase products.', 'error');
+      return;
+    }
+
     if (!product || (!product.id && !product.productId)) {
       addToast('Invalid product details. Cannot add to cart.', 'error');
       return;
     }
 
     const prodId = product.productId || product.id;
-    const token = localStorage.getItem('highMartToken');
 
-    if (token) {
+    if (authService.isAuthenticated()) {
       try {
         const response = await cartService.addToCart(prodId, 1);
-        if (response && response.cart) {
-          setCart(response.cart);
+        if (response.success) {
+          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
+          setCart(mapped);
           addToast(`${product.name} added to cart.`, 'success');
         }
       } catch (error) {
-        addToast(error.response?.data?.message || error.message || 'Failed to add item to cart', 'error');
+        const errMsg = error.response?.data?.error || error.message;
+        addToast(errMsg, 'error');
+        if (error.response?.status === 401) {
+          authService.logout();
+          setCart([]);
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
       }
     } else {
       setCart((prevCart) => {
@@ -106,23 +134,30 @@ export const CartProvider = ({ children }) => {
           );
         }
         addToast(`${product.name} added to cart.`, 'success');
-        return [...prevCart, { ...product, productId: prodId, quantity: 1 }];
+        return [...prevCart, { ...product, id: prodId, productId: prodId, quantity: 1 }];
       });
     }
   };
 
   const removeFromCart = async (productId) => {
-    const token = localStorage.getItem('highMartToken');
-
-    if (token) {
+    if (authService.isAuthenticated()) {
       try {
         const response = await cartService.removeFromCart(productId);
-        if (response && response.cart) {
-          setCart(response.cart);
+        if (response.success) {
+          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
+          setCart(mapped);
           addToast('Item removed from cart.', 'info');
         }
       } catch (error) {
-        addToast(error.response?.data?.message || error.message || 'Failed to remove item', 'error');
+        const errMsg = error.response?.data?.error || error.message;
+        addToast(errMsg, 'error');
+        if (error.response?.status === 401) {
+          authService.logout();
+          setCart([]);
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
       }
     } else {
       setCart((prevCart) => {
@@ -136,17 +171,28 @@ export const CartProvider = ({ children }) => {
   };
 
   const updateQuantity = async (productId, quantity) => {
-    if (quantity < 1) return;
-    const token = localStorage.getItem('highMartToken');
+    if (quantity <= 0) {
+      await removeFromCart(productId);
+      return;
+    }
 
-    if (token) {
+    if (authService.isAuthenticated()) {
       try {
         const response = await cartService.updateQuantity(productId, quantity);
-        if (response && response.cart) {
-          setCart(response.cart);
+        if (response.success) {
+          const mapped = response.cart.map(item => ({ ...item, id: item.productId }));
+          setCart(mapped);
         }
       } catch (error) {
-        addToast(error.response?.data?.message || error.message || 'Failed to update quantity', 'error');
+        const errMsg = error.response?.data?.error || error.message;
+        addToast(errMsg, 'error');
+        if (error.response?.status === 401) {
+          authService.logout();
+          setCart([]);
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
       }
     } else {
       setCart((prevCart) =>
@@ -157,21 +203,9 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const clearCart = async () => {
-    const token = localStorage.getItem('highMartToken');
-
-    if (token) {
-      try {
-        await cartService.clearCart();
-        setCart([]);
-        addToast('Shopping cart cleared.', 'info');
-      } catch (error) {
-        addToast('Failed to clear cart in database.', 'error');
-      }
-    } else {
-      setCart([]);
-      addToast('Shopping cart cleared.', 'info');
-    }
+  const clearCart = () => {
+    setCart([]);
+    addToast('Shopping cart cleared.', 'info');
   };
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
@@ -193,6 +227,7 @@ export const CartProvider = ({ children }) => {
         cartSubtotal,
         toasts,
         addToast,
+        syncCart,
         syncCartWithBackend
       }}
     >
