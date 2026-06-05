@@ -24,6 +24,15 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Guard for customer-only routes (e.g. Cart, Wishlist)
+const CustomerRoute = ({ children }) => {
+  const currentUser = authService.getCurrentUser();
+  if (currentUser?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  return children;
+};
+
 // Guard for admin-only routes (e.g. Admin Panel)
 const AdminRoute = ({ children }) => {
   const isAuth = authService.isAuthenticated();
@@ -50,8 +59,8 @@ const AppRoutes = () => {
       <Route path="/home" element={<Navigate to="/" replace />} />
       <Route path="/products" element={<Products />} />
       <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/wishlist" element={<Wishlist />} />
+      <Route path="/cart" element={<CustomerRoute><Cart /></CustomerRoute>} />
+      <Route path="/wishlist" element={<CustomerRoute><Wishlist /></CustomerRoute>} />
 
       {/* Guest-only Auth Pages */}
       <Route 

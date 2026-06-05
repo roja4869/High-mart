@@ -30,6 +30,10 @@ const getUserCart = async (userId) => {
  */
 export const getCart = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot view or manage a shopping cart');
+    }
     const userId = req.user.id;
     const cart = await getUserCart(userId);
     
@@ -49,6 +53,10 @@ export const getCart = async (req, res, next) => {
  */
 export const addToCart = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot book or purchase products');
+    }
     const userId = req.user.id;
     const { productId, quantity } = req.body;
 
@@ -125,6 +133,10 @@ export const addToCart = async (req, res, next) => {
  */
 export const updateCartQuantity = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot manage a shopping cart');
+    }
     const userId = req.user.id;
     const productId = parseInt(req.params.id);
     const { quantity } = req.body;
@@ -190,6 +202,10 @@ export const updateCartQuantity = async (req, res, next) => {
  */
 export const removeFromCart = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot manage a shopping cart');
+    }
     const userId = req.user.id;
     const productId = parseInt(req.params.id);
 

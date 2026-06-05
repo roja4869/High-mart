@@ -67,6 +67,12 @@ export const CartProvider = ({ children }) => {
   }, [cart]);
 
   const addToCart = async (product) => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser?.role === 'admin') {
+      addToast('Monitoring Mode: Administrators cannot book or purchase products.', 'error');
+      return;
+    }
+
     if (!product || !product.id) {
       addToast('Invalid product details. Cannot add to cart.', 'error');
       return;

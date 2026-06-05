@@ -8,7 +8,8 @@ import './ProductList.css';
 const ITEMS_PER_PAGE = 6;
 
 const ProductList = () => {
-  const { cart, addToCart, updateCartQuantity, toggleWishlist, wishlist } = useContext(AppContext);
+  const { cart, addToCart, updateCartQuantity, toggleWishlist, wishlist, user } = useContext(AppContext);
+  const isAdmin = user?.role === 'admin';
   const [searchParams, setSearchParams] = useSearchParams();
   console.log("[RENDER] ProductList Component", searchParams.toString());
 
@@ -566,13 +567,15 @@ const ProductList = () => {
                       </div>
 
                       {/* Wishlist Icon */}
-                      <button 
-                        onClick={() => toggleWishlist(product)}
-                        className={`wishlist-toggle-btn ${isWishlisted ? 'active' : ''}`}
-                        aria-label="Add to Wishlist"
-                      >
-                        <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} />
-                      </button>
+                      {!isAdmin && (
+                        <button 
+                          onClick={() => toggleWishlist(product)}
+                          className={`wishlist-toggle-btn ${isWishlisted ? 'active' : ''}`}
+                          aria-label="Add to Wishlist"
+                        >
+                          <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} />
+                        </button>
+                      )}
 
                       {/* Quick view overlay button */}
                       <div className="card-quick-overlay">
@@ -622,7 +625,11 @@ const ProductList = () => {
                             <span className="old-price">₹{product.price.toFixed(2)}</span>
                           )}
                         </div>
-                        {(() => {
+                        {isAdmin ? (
+                          <span className="admin-view-badge" style={{ fontSize: '11px', padding: '3px 6px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.2)', fontWeight: 'bold' }}>
+                            Monitoring
+                          </span>
+                        ) : (() => {
                           const cartItem = cart && cart.find(item => item.id === product.id);
                           if (cartItem) {
                             return (

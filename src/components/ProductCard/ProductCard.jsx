@@ -6,11 +6,12 @@ import './ProductCard.css';
 
 const ProductCard = ({ product, onPreview }) => {
   const { cart, addToCart, updateQuantity, removeFromCart } = useContext(CartContext);
-  const { toggleWishlist, wishlist } = useContext(AppContext);
+  const { toggleWishlist, wishlist, user } = useContext(AppContext);
 
   const isWishlisted = wishlist.some(item => item.id === product.id);
   const finalPrice = product.price * (1 - (product.discountPercentage || 0) / 100);
   const cartItem = cart.find(item => item.id === product.id);
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="product-card-container glass-effect animate-fade-in">
@@ -26,16 +27,18 @@ const ProductCard = ({ product, onPreview }) => {
         )}
         
         {/* Wishlist Heart Toggle */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleWishlist(product);
-          }}
-          className={`product-wishlist-btn ${isWishlisted ? 'active' : ''}`}
-          aria-label="Toggle Wishlist"
-        >
-          <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} stroke={isWishlisted ? '#ef4444' : '#64748b'} />
-        </button>
+        {!isAdmin && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleWishlist(product);
+            }}
+            className={`product-wishlist-btn ${isWishlisted ? 'active' : ''}`}
+            aria-label="Toggle Wishlist"
+          >
+            <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} stroke={isWishlisted ? '#ef4444' : '#64748b'} />
+          </button>
+        )}
 
         {/* Quick View Hover Overlay */}
         <div className="product-quickview-overlay">
@@ -90,7 +93,11 @@ const ProductCard = ({ product, onPreview }) => {
               <span className="price-old">₹{product.price.toFixed(2)}</span>
             )}
           </div>
-          {cartItem ? (
+          {isAdmin ? (
+            <span className="admin-view-badge" style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.2)', fontWeight: 'bold' }}>
+              Monitoring
+            </span>
+          ) : cartItem ? (
             <div className="product-qty-selector">
               <button 
                 onClick={(e) => {

@@ -102,6 +102,11 @@ const App = () => {
   }, [wishlist]);
 
   const toggleWishlist = (product) => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser?.role === 'admin') {
+      addToast('Monitoring Mode: Administrators cannot use the wishlist feature.', 'error');
+      return;
+    }
     setWishlist(prev => {
       const exists = prev.find(item => item.id === product.id);
       if (exists) {

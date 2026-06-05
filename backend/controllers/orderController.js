@@ -36,6 +36,10 @@ const getOrderDetails = async (sqlWhere, args = []) => {
  */
 export const createOrder = async (req, res, next) => {
   try {
+    if (req.user && req.user.role === 'admin') {
+      res.status(403);
+      throw new Error('Access denied: Admins cannot create orders or book products');
+    }
     const userId = req.user.id;
     const { shippingAddress, paymentMethod, paymentStatus, transactionId, totalAmount, customerName, customerEmail, customerPhone, items } = req.body;
 
