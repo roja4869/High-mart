@@ -110,7 +110,7 @@ const Login = () => {
       const passVal = roleType === 'admin' ? 'admin123' : 'password123';
       
       const data = await authService.login(emailVal, passVal);
-      setUser(data.user);
+      setCurrentUser(data.user);
       addToast(data.message || 'Quick login successful!', 'success');
       
       if (syncCart) {

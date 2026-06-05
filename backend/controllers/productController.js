@@ -7,12 +7,21 @@ import { db } from '../data/db.js';
  */
 export const getProducts = async (req, res, next) => {
   try {
-    const { category, search } = req.query;
+    console.log("getProducts query parameters:", req.query);
+    const { category, search, category_id, subcategory_id } = req.query;
     
     let sql = `
-      SELECT p.*, c.name as category 
+      SELECT p.*, c.name as category,
+             s1.name as s1_name,
+             s2.name as s2_name,
+             s3.name as s3_name
       FROM products p 
       LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN subcategories s1 ON p.subcategory_id = s1.id
+      LEFT JOIN category_relationships r1 ON s1.id = r1.child_id AND r1.parent_type = 'subcategory'
+      LEFT JOIN subcategories s2 ON r1.parent_id = s2.id
+      LEFT JOIN category_relationships r2 ON s2.id = r2.child_id AND r2.parent_type = 'subcategory'
+      LEFT JOIN subcategories s3 ON r2.parent_id = s3.id
       WHERE 1=1
     `;
     const args = [];
@@ -21,6 +30,27 @@ export const getProducts = async (req, res, next) => {
     if (category) {
       sql += ` AND LOWER(c.name) = ?`;
       args.push(category.toLowerCase());
+    }
+
+    // Filter by category ID
+    if (category_id) {
+      sql += ` AND p.category_id = ?`;
+      args.push(parseInt(category_id));
+    }
+
+    // Filter by subcategory ID (including all descendants recursively)
+    if (subcategory_id) {
+      sql += ` AND p.subcategory_id IN (
+        WITH RECURSIVE subcat_tree(id) AS (
+          SELECT ?
+          UNION ALL
+          SELECT r.child_id
+          FROM category_relationships r
+          JOIN subcat_tree t ON r.parent_id = t.id AND r.parent_type = 'subcategory' AND r.child_type = 'subcategory'
+        )
+        SELECT id FROM subcat_tree
+      )`;
+      args.push(parseInt(subcategory_id));
     }
 
     // Search by name or description
@@ -32,12 +62,44 @@ export const getProducts = async (req, res, next) => {
 
     const result = await db.execute({ sql, args });
 
+    const products = result.rows.map(row => {
+      let subCategory = null;
+      let gender = null;
+      let productType = null;
+
+      if (row.s3_name) {
+        subCategory = row.s3_name;
+        gender = row.s2_name;
+        productType = row.s1_name;
+      } else if (row.s2_name) {
+        subCategory = row.s2_name;
+        if (['Men', 'Women', 'Kids'].includes(row.s1_name)) {
+          gender = row.s1_name;
+        } else {
+          productType = row.s1_name;
+        }
+      } else if (row.s1_name) {
+        subCategory = row.s1_name;
+      }
+
+      const { s1_name, s2_name, s3_name, ...cleanRow } = row;
+      return {
+        ...cleanRow,
+        subCategory,
+        gender,
+        productType
+      };
+    });
+
+    console.log(`getProducts query returned ${products.length} products.`);
+
     res.json({
       success: true,
-      count: result.rows.length,
-      products: result.rows
+      count: products.length,
+      products
     });
   } catch (error) {
+    console.error("Error in getProducts controller:", error);
     next(error);
   }
 };
@@ -50,29 +112,66 @@ export const getProducts = async (req, res, next) => {
 export const getProductById = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
+    console.log(`getProductById called with ID: ${id}`);
     
     const result = await db.execute({
       sql: `
-        SELECT p.*, c.name as category 
+        SELECT p.*, c.name as category,
+               s1.name as s1_name,
+               s2.name as s2_name,
+               s3.name as s3_name
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN subcategories s1 ON p.subcategory_id = s1.id
+        LEFT JOIN category_relationships r1 ON s1.id = r1.child_id AND r1.parent_type = 'subcategory'
+        LEFT JOIN subcategories s2 ON r1.parent_id = s2.id
+        LEFT JOIN category_relationships r2 ON s2.id = r2.child_id AND r2.parent_type = 'subcategory'
+        LEFT JOIN subcategories s3 ON r2.parent_id = s3.id
         WHERE p.id = ?
       `,
       args: [id]
     });
 
-    const product = result.rows[0];
+    const row = result.rows[0];
 
-    if (!product) {
+    if (!row) {
       res.status(404);
       throw new Error(`Product with ID ${req.params.id} not found`);
     }
+
+    let subCategory = null;
+    let gender = null;
+    let productType = null;
+
+    if (row.s3_name) {
+      subCategory = row.s3_name;
+      gender = row.s2_name;
+      productType = row.s1_name;
+    } else if (row.s2_name) {
+      subCategory = row.s2_name;
+      if (['Men', 'Women', 'Kids'].includes(row.s1_name)) {
+        gender = row.s1_name;
+      } else {
+        productType = row.s1_name;
+      }
+    } else if (row.s1_name) {
+      subCategory = row.s1_name;
+    }
+
+    const { s1_name, s2_name, s3_name, ...cleanRow } = row;
+    const product = {
+      ...cleanRow,
+      subCategory,
+      gender,
+      productType
+    };
 
     res.json({
       success: true,
       product
     });
   } catch (error) {
+    console.error(`Error in getProductById controller for ID ${req.params.id}:`, error);
     next(error);
   }
 };
