@@ -3,20 +3,25 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
 import { productService } from '../services/productService';
-import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy } from 'lucide-react';
+import { categoryService } from '../services/categoryService';
+import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy, ShoppingBag } from 'lucide-react';
 import './Home.css';
 
-// Mock Products Data
-const FEATURED_PRODUCTS = [
-  { id: 4, name: 'Premium Organic Almonds (1kg)', category: 'Groceries', price: 14.99, rating: 4.8, discount: 10, image: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&q=80' },
-  { id: 1, name: 'Wireless Over-Ear ANC Headphones', category: 'Electronics', price: 129.99, rating: 4.9, discount: 20, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
-  { id: 2, name: 'Minimalist Quartz Leather Watch', category: 'Fashion', price: 79.99, rating: 4.6, discount: 15, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
-  { id: 5, name: 'Ergonomic Adjustable Office Chair', category: 'Home & Kitchen', price: 149.99, rating: 4.8, discount: 12, image: 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=400&q=80' },
-  { id: 3, name: 'Smart Fitness Tracker & HR Monitor', category: 'Electronics', price: 49.99, rating: 4.5, discount: 25, image: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=400&q=80' },
-  { id: 6, name: 'Non-Stick Ceramic Cookware Set', category: 'Home & Kitchen', price: 89.99, rating: 4.7, discount: 30, image: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=400&q=80' },
-  { id: 7, name: 'Organic Lavender Soothing Lotion', category: 'Beauty', price: 18.99, rating: 4.6, discount: 5, image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&q=80' },
-  { id: 8, name: 'Vintage Waterproof Canvas Backpack', category: 'Fashion', price: 59.99, rating: 4.7, discount: 10, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80' }
-];
+// Meta mapping for category icons and styles to preserve premium aesthetic
+const CATEGORY_META = {
+  'Groceries': { icon: Apple, grad: 'cat-grad-1' },
+  'Electronics': { icon: Smartphone, grad: 'cat-grad-2' },
+  'Fashion': { icon: Shirt, grad: 'cat-grad-3' },
+  'Books': { icon: BookOpen, grad: 'cat-grad-4' },
+  'Toys': { icon: ToyBrick, grad: 'cat-grad-5' },
+  'Home & Kitchen': { icon: HomeIcon, grad: 'cat-grad-6' },
+  'Beauty': { icon: Sparkles, grad: 'cat-grad-7' },
+  'Sports': { icon: Trophy, grad: 'cat-grad-8' }
+};
+
+const getCategoryMeta = (name) => {
+  return CATEGORY_META[name] || { icon: ShoppingBag, grad: 'cat-grad-1' };
+};
 
 // Mock Reviews
 const REVIEWS = [
@@ -30,6 +35,7 @@ const Home = () => {
   const location = useLocation();
   const { addToCart, toggleWishlist, wishlist, addToast } = useContext(AppContext);
   const [productsList, setProductsList] = useState([]);
+  const [categories, setCategories] = useState([]);
   console.log("[RENDER] Home Component", location);
 
   useEffect(() => {
@@ -50,16 +56,24 @@ const Home = () => {
           setProductsList(mapped);
         }
       } catch (err) {
-        console.warn("Failed to load products from backend, falling back to static featured products.", err.message);
-        const mappedFallback = FEATURED_PRODUCTS.map(p => ({
-          ...p,
-          rating: p.rating || 4.5,
-          discount: p.discount || 10
-        }));
-        setProductsList(mappedFallback);
+        console.error("Failed to load products from backend:", err.message);
+        setProductsList([]);
       }
     };
+    
+    const fetchCategories = async () => {
+      try {
+        const res = await categoryService.getCategories();
+        if (res && res.categories) {
+          setCategories(res.categories);
+        }
+      } catch (err) {
+        console.error('Failed to load categories in Home:', err.message);
+      }
+    };
+
     loadProducts();
+    fetchCategories();
   }, []);
 
   // useEffect(() => {
@@ -166,77 +180,21 @@ const Home = () => {
         </div>
 
         <div className="categories-grid">
-          {/* Card 1: Groceries */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Groceries')}>
-            <div className="category-icon-box cat-grad-1">
-              <Apple size={28} />
-            </div>
-            <h3>Groceries</h3>
-            <span className="category-count">1,200+ Products</span>
-          </div>
+          {categories.map((cat) => {
+            const meta = getCategoryMeta(cat.name);
+            const IconComponent = meta.icon;
+            const count = productsList.filter(p => p.category === cat.name).length;
 
-          {/* Card 2: Electronics */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Electronics')}>
-            <div className="category-icon-box cat-grad-2">
-              <Smartphone size={28} />
-            </div>
-            <h3>Electronics</h3>
-            <span className="category-count">850+ Products</span>
-          </div>
-
-          {/* Card 3: Fashion */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Fashion')}>
-            <div className="category-icon-box cat-grad-3">
-              <Shirt size={28} />
-            </div>
-            <h3>Fashion</h3>
-            <span className="category-count">3,100+ Products</span>
-          </div>
-
-          {/* Card 4: Books */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Books')}>
-            <div className="category-icon-box cat-grad-4">
-              <BookOpen size={28} />
-            </div>
-            <h3>Books</h3>
-            <span className="category-count">450+ Products</span>
-          </div>
-
-          {/* Card 5: Toys */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Toys')}>
-            <div className="category-icon-box cat-grad-5">
-              <ToyBrick size={28} />
-            </div>
-            <h3>Toys</h3>
-            <span className="category-count">620+ Products</span>
-          </div>
-
-          {/* Card 6: Home & Kitchen */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Home & Kitchen')}>
-            <div className="category-icon-box cat-grad-6">
-              <HomeIcon size={28} />
-            </div>
-            <h3>Home & Kitchen</h3>
-            <span className="category-count">940+ Products</span>
-          </div>
-
-          {/* Card 7: Beauty */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Beauty')}>
-            <div className="category-icon-box cat-grad-7">
-              <Sparkles size={28} />
-            </div>
-            <h3>Beauty</h3>
-            <span className="category-count">1,100+ Products</span>
-          </div>
-
-          {/* Card 8: Sports */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Sports')}>
-            <div className="category-icon-box cat-grad-8">
-              <Trophy size={28} />
-            </div>
-            <h3>Sports</h3>
-            <span className="category-count">380+ Products</span>
-          </div>
+            return (
+              <div key={cat.id} className="category-card" onClick={() => handleCategoryScroll(cat.name)}>
+                <div className={`category-icon-box ${meta.grad}`}>
+                  <IconComponent size={28} />
+                </div>
+                <h3>{cat.name}</h3>
+                <span className="category-count">{count > 0 ? `${count}+ Products` : 'No Products'}</span>
+              </div>
+            );
+          })}
         </div>
       </section>
 

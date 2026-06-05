@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AppContext } from '../App';
-import { MOCK_PRODUCTS } from '../services/productService';
+
 
 // Sub-components
 import WishlistCard from '../components/WishlistCard';
@@ -26,20 +26,7 @@ const Wishlist = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
 
-  // Prepopulate wishlist if empty on initial visit
-  useEffect(() => {
-    const isInitialized = localStorage.getItem('highMartWishlistInitialized');
-    if (!isInitialized && wishlist.length === 0) {
-      // Pick 3 items: smart tracker (id 3), ceramic cookware (id 6), canvas backpack (id 8)
-      const initialIds = [3, 6, 8];
-      const initialItems = MOCK_PRODUCTS.filter(p => initialIds.includes(p.id)).map(p => ({
-        ...p,
-        image: p.image || (p.images && p.images[0])
-      }));
-      setWishlist(initialItems);
-      localStorage.setItem('highMartWishlistInitialized', 'true');
-    }
-  }, [wishlist, setWishlist]);
+
 
   // Actions
   const handleMoveToCart = (product) => {
