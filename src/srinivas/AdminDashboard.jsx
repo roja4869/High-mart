@@ -278,8 +278,8 @@ const AdminDashboard = () => {
 
   // Filter listings
   const filteredProducts = productsList.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(prodSearch.toLowerCase()) || p.category.toLowerCase().includes(prodSearch.toLowerCase());
-    const matchCat = prodFilter === '' || p.category.toLowerCase() === prodFilter.toLowerCase();
+    const matchSearch = (p.name || '').toLowerCase().includes(prodSearch.toLowerCase()) || (p.category || '').toLowerCase().includes(prodSearch.toLowerCase());
+    const matchCat = prodFilter === '' || (p.category || '').toLowerCase() === prodFilter.toLowerCase();
     return matchSearch && matchCat;
   });
 
@@ -290,8 +290,8 @@ const AdminDashboard = () => {
   );
 
   const filteredUsers = usersList.filter(u => 
-    u.name.toLowerCase().includes(userSearch.toLowerCase()) || 
-    u.email.toLowerCase().includes(userSearch.toLowerCase())
+    (u.name || '').toLowerCase().includes(userSearch.toLowerCase()) || 
+    (u.email || '').toLowerCase().includes(userSearch.toLowerCase())
   );
 
   // SVG Chart data calculation helper
@@ -517,8 +517,8 @@ const AdminDashboard = () => {
                   </div>
                   <div className="timeline-activity-scroller">
                     {(inventoryLogs || []).map(log => {
-                      const isDeduction = log.activityType?.toLowerCase().includes('deduction');
-                      const isInbound = log.activityType?.toLowerCase().includes('inbound');
+                      const isDeduction = (log.activityType || '').toLowerCase().includes('deduction');
+                      const isInbound = (log.activityType || '').toLowerCase().includes('inbound');
                       
                       return (
                         <div key={log.id} className="timeline-entry-row">

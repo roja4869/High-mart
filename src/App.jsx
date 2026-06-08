@@ -112,15 +112,6 @@ const App = () => {
     };
     fetchWishlist();
   }, [currentUser]);
-
-  const logout = () => {
-    authService.logout();
-    setCurrentUser(null);
-  };
-
-  const user = currentUser;
-  const setUser = setCurrentUser;
-
   const logout = () => {
     authService.logout();
     setCurrentUser(null);

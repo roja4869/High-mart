@@ -46,7 +46,7 @@ const Home = () => {
         if (response.success || Array.isArray(response)) {
           const list = response.products || response;
           const mapped = list.map(p => {
-            const isFullUrl = p.image && (p.image.startsWith('http://') || p.image.startsWith('https://'));
+            const isFullUrl = p.image && (p.image.startsWith('http://') || p.image.startsWith('https://') || p.image.startsWith('/uploads/'));
             return {
               ...p,
               image: isFullUrl ? p.image : `/uploads/${p.image}`,

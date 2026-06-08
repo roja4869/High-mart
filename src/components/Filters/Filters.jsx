@@ -24,7 +24,14 @@ const Filters = ({
   setSelectedGenders
 }) => {
   const [categoriesTree, setCategoriesTree] = useState([]);
-  const [expandedNodes, setExpandedNodes] = useState({});
+  const [expandedNodes, setExpandedNodes] = useState({
+    'Fashion': true,
+    'Fashion > Clothing': true,
+    'Fashion > Footwear': true,
+    'Fashion > Eyewear': true,
+    'Fashion > Bags': true,
+    'Fashion > Watches': true
+  });
 
   // 1. Fetch categories hierarchical tree from backend
   useEffect(() => {
@@ -41,6 +48,38 @@ const Filters = ({
     fetchCategories();
   }, []);
 
+  // Auto-expand category tree nodes when selectedGenders changes
+  useEffect(() => {
+    if (selectedGenders.length === 0) return;
+
+    setExpandedNodes(prev => {
+      const nextExpanded = { ...prev };
+      
+      const traverseAndExpand = (node) => {
+        let hasMatchingChild = false;
+        
+        if (node.children && node.children.length > 0) {
+          node.children.forEach(child => {
+            if (selectedGenders.includes(child.name)) {
+              hasMatchingChild = true;
+            }
+            if (traverseAndExpand(child)) {
+              hasMatchingChild = true;
+            }
+          });
+        }
+        
+        if (hasMatchingChild) {
+          nextExpanded[node.path] = true;
+        }
+        return hasMatchingChild;
+      };
+
+      categoriesTree.forEach(root => traverseAndExpand(root));
+      return nextExpanded;
+    });
+  }, [selectedGenders, categoriesTree]);
+
   const toggleExpand = (path, e) => {
     e.stopPropagation();
     setExpandedNodes(prev => ({
@@ -49,11 +88,49 @@ const Filters = ({
     }));
   };
 
-  // 2. Count products belonging to this category/subcategory path dynamically
+  // 2. Count products belonging to this category/subcategory path dynamically based on active filters
   const getProductCount = (path) => {
     if (!products || products.length === 0) return 0;
 
     return products.filter(p => {
+      // 1. Gender Match
+      const isGenderSpecific = p.category === 'Fashion';
+      
+      let matchesGender = true;
+      if (selectedGenders.length > 0) {
+        if (isGenderSpecific) {
+          matchesGender = p.gender && selectedGenders.includes(p.gender);
+        } else {
+          matchesGender = true; // For non-gender-specific categories, assume category is selected
+        }
+      }
+      if (!matchesGender) return false;
+
+      // 2. Brand Match
+      const matchesBrand = selectedBrands.length === 0 ||
+        selectedBrands.includes(p.brand);
+      if (!matchesBrand) return false;
+
+      // 3. Rating Match
+      const matchesRating = p.rating >= selectedRating;
+      if (!matchesRating) return false;
+
+      // 4. Availability Match
+      const matchesAvailability = !inStockOnly || p.stock > 0;
+      if (!matchesAvailability) return false;
+
+      // 5. Price Match
+      const finalPrice = p.price * (1 - (p.discountPercentage || 0) / 100);
+      const matchesPrice = finalPrice <= priceRange;
+      if (!matchesPrice) return false;
+
+      // 6. Search Match
+      const matchesSearch = searchQuery.trim() === '' || 
+        (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (p.brand || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.category || '').toLowerCase().includes(searchQuery.toLowerCase());
+      if (!matchesSearch) return false;
+
       // Construct full category path for the product
       let prodPath = p.category || '';
       if (p.subCategory) prodPath += ` > ${p.subCategory}`;

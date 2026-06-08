@@ -63,7 +63,7 @@ const enrichProduct = (p) => {
   specifications = specifications || {};
   variants = variants || {};
 
-  if (name.includes('Coffee Maker')) {
+  if (name === 'Coffee Maker' || name.includes('Coffee Maker')) {
     brand = 'Cuisinart';
     discount = 10;
     rating = 4.8;
@@ -77,7 +77,7 @@ const enrichProduct = (p) => {
       '12-cup glass carafe with ergonomic handle'
     ];
     specifications = { 'Brand': 'Cuisinart', 'Model': 'CM-100', 'Warranty': '1 Year' };
-  } else if (name.includes('Headphones') || name.includes('Noise-Cancelling')) {
+  } else if (name === 'Wireless Over-Ear ANC Headphones' || name === 'Noise-Cancelling Headphones') {
     brand = 'AudioPhonic';
     discount = 20;
     rating = 4.9;
@@ -96,7 +96,7 @@ const enrichProduct = (p) => {
       'Built-in dual microphones with environmental noise reduction for crystal clear calls'
     ];
     specifications = { 'Brand': 'AudioPhonic', 'Model': 'ANC-Silence Pro', 'Warranty': '1 Year' };
-  } else if (name.includes('Office Chair') || name.includes('Ergonomic')) {
+  } else if (name === 'Ergonomic Adjustable Office Chair') {
     brand = 'ErgoComfort';
     discount = 15;
     rating = 4.8;
@@ -114,7 +114,7 @@ const enrichProduct = (p) => {
       'SGS-certified Class 4 gas lift cylinder for secure height adjustment'
     ];
     specifications = { 'Brand': 'ErgoComfort', 'Model': 'EC-Pro-Mesh', 'Warranty': '3 Years' };
-  } else if (name.includes('Water Bottle')) {
+  } else if (name === 'Water Bottle' || name === 'Smart Water Bottle') {
     brand = 'HydroFlask';
     discount = 5;
     rating = 4.7;
@@ -127,7 +127,7 @@ const enrichProduct = (p) => {
       'BPA-free and durable stainless steel build'
     ];
     specifications = { 'Brand': 'HydroFlask', 'Model': 'Standard Mouth', 'Warranty': 'Lifetime' };
-  } else if (name.includes('Shoes') || name.includes('Running')) {
+  } else if (name === 'Running Shoes' || name === 'Nike Air Zoom Shoes') {
     brand = 'Nike';
     discount = 10;
     rating = 4.6;
@@ -158,6 +158,19 @@ const enrichProduct = (p) => {
   const processedImages = images.map(img => processImageSrc(img));
   const mainImage = processedImages[0] || processImageSrc(p.image) || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80';
 
+  let gender = p.gender;
+  if (!gender) {
+    const nameLower = (p.name || '').toLowerCase();
+    const descLower = (description || '').toLowerCase();
+    if (/\bmen\b|\bmens\b|\bmale\b/.test(nameLower) || /\bmen\b|\bmens\b|\bmale\b/.test(descLower)) {
+      gender = 'Men';
+    } else if (/\bwomen\b|\bwomens\b|\bfemale\b|\blady\b|\bladies\b/.test(nameLower) || /\bwomen\b|\bwomens\b|\bfemale\b|\blady\b|\bladies\b/.test(descLower)) {
+      gender = 'Women';
+    } else if (/\bkids\b|\bboys\b|\bgirls\b|\bchild\b|\bchildren\b/.test(nameLower) || /\bkids\b|\bboys\b|\bgirls\b|\bchild\b|\bchildren\b/.test(descLower)) {
+      gender = 'Kids';
+    }
+  }
+
   return {
     ...p,
     discount,
@@ -169,6 +182,7 @@ const enrichProduct = (p) => {
     description,
     images: processedImages,
     image: mainImage,
+    gender,
     features,
     specifications,
     variants
@@ -179,7 +193,7 @@ export const productService = {
   // Fetch all products with filter parameters
   async getProducts(params = {}) {
     try {
-      const response = await api.get('/products');
+      const response = await api.get('/products', { params });
       const data = response.data?.products || response.data || [];
       return data.map(p => enrichProduct(p));
     } catch (err) {

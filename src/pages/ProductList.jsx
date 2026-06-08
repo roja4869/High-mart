@@ -140,10 +140,10 @@ const ProductList = () => {
     // Search Query (name/brand/category/description)
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const matchName = product.name.toLowerCase().includes(q);
-      const matchBrand = product.brand.toLowerCase().includes(q);
-      const matchCat = product.category.toLowerCase().includes(q);
-      const matchDesc = product.description.toLowerCase().includes(q);
+      const matchName = (product.name || '').toLowerCase().includes(q);
+      const matchBrand = (product.brand || '').toLowerCase().includes(q);
+      const matchCat = (product.category || '').toLowerCase().includes(q);
+      const matchDesc = (product.description || '').toLowerCase().includes(q);
       if (!matchName && !matchBrand && !matchCat && !matchDesc) return false;
     }
 

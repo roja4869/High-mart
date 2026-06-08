@@ -116,31 +116,17 @@ const Products = () => {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [selectedGenders, setSelectedGenders] = useState([]);
 
-  // Load products when active filters change
+  // Load products on mount
   useEffect(() => {
     const loadProducts = async () => {
       setIsLoading(true);
       setError(null);
       
-      const params = {};
-      if (selectedCategories && selectedCategories.length > 0) {
-        const activePath = selectedCategories[0];
-        console.log("Fetching for active category path:", activePath);
-        
-        if (activePath.includes(' > ')) {
-          const parts = activePath.split(' > ');
-          const catName = parts[0].trim();
-          params.category_id = CATEGORY_IDS[catName.toLowerCase()] || null;
-          params.subcategory_id = SUBCATEGORY_IDS[activePath] || null;
-        } else {
-          params.category_id = CATEGORY_IDS[activePath.toLowerCase()] || null;
-        }
-      }
-      
-      console.log("Sending API request with params:", params);
+      console.log("Fetching all products on mount...");
       try {
-        const response = await productService.getProducts(params);
+        const response = await productService.getProducts({});
         if (response) {
+          console.log(`Successfully fetched ${response.length} products.`);
           setProducts(response);
         }
       } catch (err) {
@@ -151,7 +137,7 @@ const Products = () => {
       }
     };
     loadProducts();
-  }, [selectedCategories]);
+  }, []);
 
   // Parse category search query param on mount
   useEffect(() => {
@@ -167,8 +153,16 @@ const Products = () => {
   const availableBrands = useMemo(() => {
     const relevantProducts = selectedCategories.length === 0 
       ? products 
-      : products.filter(p => selectedCategories.includes(p.category));
-    return [...new Set(relevantProducts.map(p => p.brand))].sort();
+      : products.filter(product => {
+          return selectedCategories.some(filterPath => {
+            let prodPath = product.category || '';
+            if (product.subCategory) prodPath += ` > ${product.subCategory}`;
+            if (product.gender) prodPath += ` > ${product.gender}`;
+            if (product.productType) prodPath += ` > ${product.productType}`;
+            return prodPath === filterPath || prodPath.startsWith(filterPath + ' > ');
+          });
+        });
+    return [...new Set(relevantProducts.map(p => p.brand).filter(Boolean))].sort();
   }, [products, selectedCategories]);
 
   // Reset pagination count when filters change
@@ -214,28 +208,30 @@ const Products = () => {
     let result = products.filter(product => {
       // 1. Search Query Match
       const matchesSearch = searchQuery.trim() === '' || 
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        product.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category?.toLowerCase().includes(searchQuery.toLowerCase());
+        (product.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (product.brand || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (product.category || '').toLowerCase().includes(searchQuery.toLowerCase());
 
       // 2. Categories Match (Supporting deep path hierarchies)
       const matchesCategory = selectedCategories.length === 0 || selectedCategories.some(filterPath => {
-        if (filterPath === product.category) return true;
-        
-        if (filterPath.startsWith('Fashion > ')) {
-          const parts = filterPath.split(' > ');
-          if (product.category !== 'Fashion') return false;
-          if (parts[1] && product.subCategory !== parts[1]) return false;
-          if (parts[2] && product.gender !== parts[2]) return false;
-          if (parts[3] && product.productType !== parts[3]) return false;
-          return true;
-        }
-        return false;
+        let prodPath = product.category || '';
+        if (product.subCategory) prodPath += ` > ${product.subCategory}`;
+        if (product.gender) prodPath += ` > ${product.gender}`;
+        if (product.productType) prodPath += ` > ${product.productType}`;
+        return prodPath === filterPath || prodPath.startsWith(filterPath + ' > ');
       });
 
       // 3. Gender Match
-      const matchesGender = selectedGenders.length === 0 || 
-        (product.gender && selectedGenders.includes(product.gender));
+      const isGenderSpecific = product.category === 'Fashion';
+
+      let matchesGender = true;
+      if (selectedGenders.length > 0) {
+        if (isGenderSpecific) {
+          matchesGender = product.gender && selectedGenders.includes(product.gender);
+        } else {
+          matchesGender = selectedCategories.length > 0;
+        }
+      }
 
       // 4. Brand Match
       const matchesBrand = selectedBrands.length === 0 ||
