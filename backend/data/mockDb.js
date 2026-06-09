@@ -776,7 +776,7 @@ const FASHION_GENERATOR_CONFIG = [
     adjectives: ['Genuine Leather Belt', 'Snapback Sports Cap', 'RFID Blocking Wallet', 'Classic Leather Billfold'],
     count: 20,
     images: [
-      'https://images.unsplash.com/photo-1624222247344-550fb8ec5b5d?w=600&q=80'
+      'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=600&q=80'
     ],
     prices: [299, 499, 799, 999, 1499, 1999]
   },
@@ -807,7 +807,7 @@ const FASHION_GENERATOR_CONFIG = [
 ];
 
 // Dictionary mapping each noun/type to its specific verified image URL
-const PRODUCT_IMAGE_MAP = {
+export const PRODUCT_IMAGE_MAP = {
   // Electronics
   'Headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80',
   'Speaker': 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&q=80',
@@ -933,7 +933,7 @@ const PRODUCT_IMAGE_MAP = {
   'Scarf': 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80'
 };
 
-const FASHION_GENDER_IMAGE_MAP = {
+export const FASHION_GENDER_IMAGE_MAP = {
   // Men Clothing
   'Men_T-Shirt': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&q=80',
   'Men_Shirt': 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&q=80',
@@ -966,9 +966,9 @@ const FASHION_GENDER_IMAGE_MAP = {
   'Men_Smart Watch': 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&q=80',
 
   // Men Accessories
-  'Men_Belt': 'https://images.unsplash.com/photo-1624222247344-550fb8ec5b5d?w=600&q=80',
+  'Men_Belt': 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=600&q=80',
   'Men_Cap': 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&q=80',
-  'Men_Wallet': 'https://images.unsplash.com/photo-1627124118303-624c8f94e224?w=600&q=80',
+  'Men_Wallet': 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=600&q=80',
 
   // Women Clothing
   'Women_T-Shirt': 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&q=80',

@@ -229,7 +229,7 @@ const Products = () => {
         if (isGenderSpecific) {
           matchesGender = product.gender && selectedGenders.includes(product.gender);
         } else {
-          matchesGender = selectedCategories.length > 0;
+          matchesGender = true;
         }
       }
 

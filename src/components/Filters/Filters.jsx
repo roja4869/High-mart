@@ -101,7 +101,7 @@ const Filters = ({
         if (isGenderSpecific) {
           matchesGender = p.gender && selectedGenders.includes(p.gender);
         } else {
-          matchesGender = true; // For non-gender-specific categories, assume category is selected
+          matchesGender = true;
         }
       }
       if (!matchesGender) return false;

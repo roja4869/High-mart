@@ -118,9 +118,9 @@ const PRODUCT_IMAGE_MAP = {
   'Sling Bag': 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80',
 
   // Accessories
-  'Belt': 'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&q=80',
+  'Belt': 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=600&q=80',
   'Cap': 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&q=80',
-  'Wallet': 'https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?w=600&q=80',
+  'Wallet': 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=600&q=80',
   'Jewellery': 'https://images.unsplash.com/photo-1618403088890-3d9ff6f4c8b1?w=600&q=80',
   'Hair Accessories': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&q=80',
   'Scarf': 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80'
@@ -140,8 +140,13 @@ async function run() {
   try {
     console.log("Starting database image URL updates for all products...");
     
-    // Fetch all products
-    const res = await db.execute("SELECT id, name, image, images FROM products;");
+    // Fetch all products with their category names to filter/identify Fashion products
+    const res = await db.execute(
+      "SELECT p.id, p.name, p.image, p.images, c.name as category_name " +
+      "FROM products p " +
+      "LEFT JOIN subcategories s ON p.subcategory_id = s.id " +
+      "LEFT JOIN categories c ON s.category_id = c.id;"
+    );
     const products = res.rows;
     console.log(`Found ${products.length} products to check.`);
 
@@ -151,6 +156,9 @@ async function run() {
     const sortedMapKeys = Object.keys(PRODUCT_IMAGE_MAP).sort((a, b) => b.length - a.length);
 
     for (const p of products) {
+      if (p.category_name === 'Fashion') {
+        continue;
+      }
       let needsUpdate = false;
       let newImage = p.image;
       
