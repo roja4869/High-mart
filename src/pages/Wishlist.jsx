@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AppContext } from '../App';
+import { authService } from '../services/authService';
+import { wishlistService } from '../services/wishlistService';
 
 
 // Sub-components
@@ -14,7 +16,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/Wishlist.css';
 
 const Wishlist = () => {
-  const { wishlist, setWishlist, addToCart, addToast } = useContext(AppContext);
+  const { wishlist, setWishlist, toggleWishlist, addToCart, addToast } = useContext(AppContext);
 
   // Animation state for items being removed
   const [removingIds, setRemovingIds] = useState([]);
@@ -35,8 +37,8 @@ const Wishlist = () => {
 
     // Animate item exit from wishlist grid
     setRemovingIds(prev => [...prev, product.id]);
-    setTimeout(() => {
-      setWishlist(prev => prev.filter(item => item.id !== product.id));
+    setTimeout(async () => {
+      await toggleWishlist(product);
       setRemovingIds(prev => prev.filter(id => id !== product.id));
     }, 300);
   };
@@ -54,10 +56,9 @@ const Wishlist = () => {
     
     // Animate item exit
     setRemovingIds(prev => [...prev, targetProduct.id]);
-    setTimeout(() => {
-      setWishlist(prev => prev.filter(item => item.id !== targetProduct.id));
+    setTimeout(async () => {
+      await toggleWishlist(targetProduct);
       setRemovingIds(prev => prev.filter(id => id !== targetProduct.id));
-      addToast(`"${targetProduct.name}" removed from wishlist.`, 'info');
       setProductToDelete(null);
     }, 300);
   };
@@ -74,17 +75,22 @@ const Wishlist = () => {
     const allIds = wishlist.map(item => item.id);
     setRemovingIds(allIds);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       // Add all to cart
       wishlist.forEach(item => {
-        // Add item to cart (we bypass multiple toasts by adding silent cart actions,
-        // or just let it stack - since addToCart uses addToast, let's show a single summary toast instead
-        // by customizing if needed, but since addToCart has a built-in toast, it will show them.
-        // To make it look extremely premium, we can display a single summary toast)
         addToCart(item);
       });
       
-      // Clear wishlist
+      // Clear from database if logged in
+      if (authService.isAuthenticated()) {
+        try {
+          await Promise.all(wishlist.map(item => wishlistService.removeFromWishlist(item.id)));
+        } catch (e) {
+          console.error("Failed to clear database wishlist:", e.message);
+        }
+      }
+
+      // Clear wishlist in state
       setWishlist([]);
       setRemovingIds([]);
       addToast(`Moved all items to your shopping cart!`, 'success');

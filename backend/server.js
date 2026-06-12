@@ -63,6 +63,10 @@ app.use(errorHandler);
 
 const initializeTables = async () => {
   try {
+    // Enable foreign keys
+    await db.execute("PRAGMA foreign_keys = ON;");
+    console.log("Foreign key support enabled in SQLite/libSQL.");
+
     // 1. Create categories table
     await db.execute(`
       CREATE TABLE IF NOT EXISTS categories (

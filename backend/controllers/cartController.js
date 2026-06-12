@@ -60,13 +60,13 @@ export const addToCart = async (req, res, next) => {
     const userId = req.user.id;
     const { productId, quantity } = req.body;
 
-    if (!productId) {
-      res.status(400);
-      throw new Error('Please provide product ID');
-    }
-
     const prodIdNum = parseInt(productId);
     const qtyNum = quantity !== undefined ? parseInt(quantity) : 1;
+
+    if (!productId || isNaN(prodIdNum)) {
+      res.status(400);
+      throw new Error('Please provide a valid product ID');
+    }
 
     if (isNaN(qtyNum) || qtyNum <= 0) {
       res.status(400);
@@ -146,6 +146,10 @@ export const updateCartQuantity = async (req, res, next) => {
     }
     const userId = req.user.id;
     const productId = parseInt(req.params.id);
+    if (isNaN(productId)) {
+      res.status(400);
+      throw new Error('Please provide a valid product ID');
+    }
     const { quantity } = req.body;
 
     if (quantity === undefined || isNaN(parseInt(quantity)) || parseInt(quantity) <= 0) {
@@ -215,6 +219,10 @@ export const removeFromCart = async (req, res, next) => {
     }
     const userId = req.user.id;
     const productId = parseInt(req.params.id);
+    if (isNaN(productId)) {
+      res.status(400);
+      throw new Error('Please provide a valid product ID');
+    }
 
     // Verify item is in cart
     const checkResult = await db.execute({
