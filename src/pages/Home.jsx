@@ -9,18 +9,18 @@ import './Home.css';
 
 // Meta mapping for category icons and styles to preserve premium aesthetic
 const CATEGORY_META = {
-  'Groceries': { icon: Apple, grad: 'cat-grad-1' },
-  'Electronics': { icon: Smartphone, grad: 'cat-grad-2' },
-  'Fashion': { icon: Shirt, grad: 'cat-grad-3' },
-  'Books': { icon: BookOpen, grad: 'cat-grad-4' },
-  'Toys': { icon: ToyBrick, grad: 'cat-grad-5' },
-  'Home & Kitchen': { icon: HomeIcon, grad: 'cat-grad-6' },
-  'Beauty': { icon: Sparkles, grad: 'cat-grad-7' },
-  'Sports': { icon: Trophy, grad: 'cat-grad-8' }
+  'Groceries': { img: '/assets/3d_icons/groceries.png', grad: 'cat-grad-1' },
+  'Electronics': { img: '/assets/3d_icons/electronics.png', grad: 'cat-grad-2' },
+  'Fashion': { img: '/assets/3d_icons/fashion.png', grad: 'cat-grad-3' },
+  'Books': { img: '/assets/3d_icons/books.png', grad: 'cat-grad-4' },
+  'Toys': { img: '/assets/3d_icons/toys.png', grad: 'cat-grad-5' },
+  'Home & Kitchen': { img: '/assets/3d_icons/home_kitchen.png', grad: 'cat-grad-6' },
+  'Beauty': { img: '/assets/3d_icons/beauty.png', grad: 'cat-grad-7' },
+  'Sports': { img: '/assets/3d_icons/sports.png', grad: 'cat-grad-8' }
 };
 
 const getCategoryMeta = (name) => {
-  return CATEGORY_META[name] || { icon: ShoppingBag, grad: 'cat-grad-1' };
+  return CATEGORY_META[name] || { img: '/assets/3d_icons/groceries.png', grad: 'cat-grad-1' };
 };
 
 // Mock Reviews
@@ -168,7 +168,7 @@ const Home = () => {
             </div>
           </div>
           <div className="hero-image-content">
-            <img src="/assets/hero_banner.png" alt="High Mart Hero Shopping" className="hero-illustration-img" />
+            <img src="/assets/hero_banner_3d.png" alt="High Mart Hero Shopping" className="hero-illustration-img" />
           </div>
         </div>
       </section>
@@ -183,13 +183,12 @@ const Home = () => {
         <div className="categories-grid">
           {categories.map((cat) => {
             const meta = getCategoryMeta(cat.name);
-            const IconComponent = meta.icon;
             const count = productsList.filter(p => p.category === cat.name).length;
 
             return (
               <div key={cat.id} className="category-card" onClick={() => handleCategoryScroll(cat.name)}>
                 <div className={`category-icon-box ${meta.grad}`}>
-                  <IconComponent size={28} />
+                  <img src={meta.img} alt={cat.name} className="category-3d-icon" />
                 </div>
                 <h3>{cat.name}</h3>
                 <span className="category-count">{count > 0 ? `${count}+ Products` : 'No Products'}</span>
@@ -326,7 +325,7 @@ const Home = () => {
           {/* Card 1: Delivery */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <Truck size={24} />
+              <img src="/assets/3d_icons/truck.png" alt="2h Delivery" className="benefit-3d-icon" />
             </div>
             <h3>Superfast 2h Delivery</h3>
             <p>Free priority dispatch on orders above ₹500. Delivered directly to your room safely.</p>
@@ -335,7 +334,7 @@ const Home = () => {
           {/* Card 2: Security */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <ShieldCheck size={24} />
+              <img src="/assets/3d_icons/shield.png" alt="Secure Payments" className="benefit-3d-icon" />
             </div>
             <h3>100% Secure Payments</h3>
             <p>We accept Visa, Mastercard, Google Pay, PayPal, and encrypt all payment processing layers.</p>
@@ -344,7 +343,7 @@ const Home = () => {
           {/* Card 3: Returns */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <RotateCcw size={24} />
+              <img src="/assets/3d_icons/returns.png" alt="30-Day Returns" className="benefit-3d-icon" />
             </div>
             <h3>Easy 30-Day Returns</h3>
             <p>Not satisfied? Print a return invoice slip and drop off packages for instant credit returns.</p>
@@ -353,7 +352,7 @@ const Home = () => {
           {/* Card 4: Support */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <Headphones size={24} />
+              <img src="/assets/3d_icons/support.png" alt="24/7 Support" className="benefit-3d-icon" />
             </div>
             <h3>24/7 Dedicated Support</h3>
             <p>Reach customer care via live ticket channels, email inbox, or toll-free hotlines anytime.</p>
