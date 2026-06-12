@@ -60,7 +60,7 @@ export const CartProvider = ({ children }) => {
 
       if (guestCart.length > 0) {
         for (const item of guestCart) {
-          await cartService.addToCart(item.productId || item.id, item.quantity);
+          await cartService.addToCart(item.id, item.quantity);
         }
         localStorage.removeItem('highMartCart');
       }
@@ -98,12 +98,12 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    if (!product || (!product.id && !product.productId)) {
+    if (!product || !product.id) {
       addToast('Invalid product details. Cannot add to cart.', 'error');
       return;
     }
 
-    const prodId = product.productId || product.id;
+    const prodId = product.id;
 
     if (authService.isAuthenticated()) {
       try {
@@ -126,15 +126,15 @@ export const CartProvider = ({ children }) => {
       }
     } else {
       setCart((prevCart) => {
-        const existingProduct = prevCart.find((item) => (item.productId || item.id) === prodId);
+        const existingProduct = prevCart.find((item) => item.id === prodId);
         if (existingProduct) {
           addToast(`Updated quantity of ${product.name} in cart.`, 'success');
           return prevCart.map((item) =>
-            (item.productId || item.id) === prodId ? { ...item, quantity: item.quantity + 1 } : item
+            item.id === prodId ? { ...item, quantity: item.quantity + 1 } : item
           );
         }
         addToast(`${product.name} added to cart.`, 'success');
-        return [...prevCart, { ...product, id: prodId, productId: prodId, quantity: 1 }];
+        return [...prevCart, { ...product, id: prodId, quantity: 1 }];
       });
     }
   };
@@ -161,11 +161,11 @@ export const CartProvider = ({ children }) => {
       }
     } else {
       setCart((prevCart) => {
-        const item = prevCart.find(i => (i.productId || i.id) === productId);
+        const item = prevCart.find(i => i.id === productId);
         if (item) {
           addToast(`${item.name} removed from cart.`, 'info');
         }
-        return prevCart.filter((item) => (item.productId || item.id) !== productId);
+        return prevCart.filter((item) => item.id !== productId);
       });
     }
   };
@@ -197,7 +197,7 @@ export const CartProvider = ({ children }) => {
     } else {
       setCart((prevCart) =>
         prevCart.map((item) =>
-          (item.productId || item.id) === productId ? { ...item, quantity } : item
+          item.id === productId ? { ...item, quantity } : item
         )
       );
     }
