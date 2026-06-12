@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes/AppRoutes';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer/Footer';
+import SupportChatBot from './components/SupportChatBot/SupportChatBot';
 import { CartContext } from './context/CartContext';
 import { authService } from './services/authService';
 import { cartService } from './services/cartService';
@@ -231,6 +232,7 @@ const App = () => {
               <AppRoutes />
             </main>
             <Footer />
+            <SupportChatBot />
             
             {/* Dynamic Toast Container */}
             <div className="toast-container">
