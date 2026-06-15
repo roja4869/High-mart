@@ -40,12 +40,12 @@ export const addToWishlist = async (req, res, next) => {
     const userId = req.user.id;
     const { productId } = req.body;
 
-    if (!productId) {
-      res.status(400);
-      throw new Error('Please provide product ID');
-    }
-
     const prodIdNum = parseInt(productId);
+
+    if (!productId || isNaN(prodIdNum)) {
+      res.status(400);
+      throw new Error('Please provide a valid product ID');
+    }
 
     // Verify product exists in DB
     const prodCheck = await db.execute({
@@ -95,6 +95,11 @@ export const removeFromWishlist = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const productId = parseInt(req.params.productId);
+
+    if (isNaN(productId)) {
+      res.status(400);
+      throw new Error('Please provide a valid product ID');
+    }
 
     // Verify item is in wishlist
     const checkResult = await db.execute({
