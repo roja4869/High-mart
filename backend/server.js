@@ -18,6 +18,7 @@ import reportRoutes from './routes/reportRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
+import supportRoutes from './routes/supportRoutes.js';
 
 // Middleware imports
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
@@ -54,6 +55,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/support', supportRoutes);
 
 // Error Middlewares
 app.use(notFound);

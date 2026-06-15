@@ -4,12 +4,12 @@
 
 /* Design Tokens & Variables */
 :root {
-  --wish-primary: #4F46E5;
-  --wish-primary-hover: #4338CA;
-  --wish-secondary: #06B6D4;
-  --wish-secondary-hover: #0891B2;
-  --wish-accent: #F59E0B;
-  --wish-accent-hover: #D97706;
+  --wish-primary: var(--primary-color);
+  --wish-primary-hover: var(--primary-hover);
+  --wish-secondary: var(--secondary-color);
+  --wish-secondary-hover: var(--secondary-hover);
+  --wish-accent: var(--secondary-color);
+  --wish-accent-hover: var(--secondary-hover);
   
   --wish-bg-light: #F8FAFC;
   --wish-bg-card: #FFFFFF;

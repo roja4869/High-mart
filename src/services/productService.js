@@ -193,8 +193,13 @@ export const productService = {
   // Fetch all products with filter parameters
   async getProducts(params = {}) {
     try {
+<<<<<<< Updated upstream
       const response = await api.get('/products', { params });
       const data = response.data?.products || response.data || [];
+=======
+      const response = await api.get('/products');
+      const data = response.data.products || response.data || [];
+>>>>>>> Stashed changes
       return data.map(p => enrichProduct(p));
     } catch (err) {
       console.error('Axios API connection failed fetching products:', err.message);
@@ -206,7 +211,11 @@ export const productService = {
   async getProductById(id) {
     try {
       const response = await api.get(`/products/${id}`);
+<<<<<<< Updated upstream
       const data = response.data?.product || response.data;
+=======
+      const data = response.data.product || response.data;
+>>>>>>> Stashed changes
       return enrichProduct(data);
     } catch (err) {
       console.error(`Axios API connection failed fetching product by ID: ${id}`, err.message);
