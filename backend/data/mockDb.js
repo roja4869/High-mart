@@ -49,8 +49,11 @@ export const products = [
   },
   {
     id: 2,
-    name: 'Minimalist Quartz Leather Watch',
+    name: "Men's Minimalist Quartz Leather Watch",
     category: 'Fashion',
+    subCategory: 'Watches',
+    gender: 'Men',
+    productType: 'Analog Watch',
     brand: 'ChronoClassic',
     price: 79.99,
     originalPrice: 95.00,
@@ -158,7 +161,7 @@ export const products = [
     ],
     images: [
       'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=600&q=80',
-      'https://images.unsplash.com/photo-1541140111954-75a9e3b08e2f?w=600&q=80'
+      'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?w=600&q=80'
     ],
     image: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=600&q=80',
     variants: {
@@ -308,8 +311,11 @@ export const products = [
   },
   {
     id: 8,
-    name: 'Vintage Waterproof Canvas Backpack',
+    name: "Men's Vintage Waterproof Canvas Backpack",
     category: 'Fashion',
+    subCategory: 'Bags',
+    gender: 'Men',
+    productType: 'Backpack',
     brand: 'UrbanPacker',
     price: 59.99,
     originalPrice: 66.65,
@@ -415,10 +421,10 @@ export const products = [
       'Includes steamer tray, rice scoop paddle, and liquid measuring cup'
     ],
     images: [
-      'https://images.unsplash.com/photo-1544224013-c3b8a1c3e4a2?w=600&q=80',
-      'https://images.unsplash.com/photo-1574269661728-79659b722d56?w=600&q=80'
+      'https://images.unsplash.com/photo-1596306499317-8490232098fa?w=600&q=80',
+      'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&q=80'
     ],
-    image: 'https://images.unsplash.com/photo-1544224013-c3b8a1c3e4a2?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1596306499317-8490232098fa?w=600&q=80',
     variants: {
       colors: ['#ffffff', '#0f172a'],
       storages: []
@@ -501,10 +507,10 @@ export const products = [
       'Distinct bright graphics for clear visibility on turf and grass pitches'
     ],
     images: [
-      'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=600&q=80',
+      'https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=600&q=80',
       'https://images.unsplash.com/photo-1518063319789-7217e6706b04?w=600&q=80'
     ],
-    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=600&q=80',
     variants: {
       colors: [],
       storages: []
@@ -522,6 +528,573 @@ export const products = [
     ]
   }
 ];
+
+// Programmatic Generation of 500+ Products across 8 categories with a deep Fashion subcategory tree
+const NON_FASHION_CATEGORIES = {
+  'Electronics': {
+    brands: ['Sony', 'Bose', 'Anker', 'Logitech', 'Samsung', 'Apple', 'VoltVibe', 'Intel'],
+    adjectives: ['Wireless', 'Noise-Cancelling', 'Ultra-Slim', 'Ergonomic', 'Pro-Series', 'Bluetooth', 'Smart', 'Rechargeable', 'Portable', 'Hi-Fi'],
+    nouns: ['Headphones', 'Speaker', 'Keyboard', 'Mouse', 'Powerbank', 'Earbuds', 'Smartwatch', 'Monitor'],
+    images: [
+      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80',
+      'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=600&q=80',
+      'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=600&q=80'
+    ],
+    prices: [999, 1999, 2999, 4999, 7999, 12999]
+  },
+  'Groceries': {
+    brands: ['Harvest', 'OrganicValley', 'NatureChoice', 'Nestle', 'Quaker', 'SunMaid', 'SimplyPack'],
+    adjectives: ['Premium Organic', 'Whole Grain', 'Raw', 'Unsalted', 'Fresh', 'Cold-Brew', 'Gluten-Free', 'Roasted', 'Natural', 'Sweet'],
+    nouns: ['Almonds', 'Oats', 'Coffee Beans', 'Honey', 'Tea Bags', 'Olive Oil', 'Granola', 'Maple Syrup'],
+    images: [
+      'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=600&q=80',
+      'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?w=600&q=80',
+      'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&q=80'
+    ],
+    prices: [99, 149, 199, 299, 499, 799]
+  },
+  'Home & Kitchen': {
+    brands: ['ErgoComfort', 'KitchenChef', 'Keurig', 'T-fal', 'Dyson', 'iRobot', 'AnchorHocking'],
+    adjectives: ['Ergonomic', 'Non-Stick', 'Smart', 'Adjustable', 'Double-Walled', 'Stainless Steel', 'Breathable', 'Heavy-Duty', 'Compact', 'Ceramic'],
+    nouns: ['Office Chair', 'Rice Cooker', 'Cookware Set', 'Water Bottle', 'Desk Lamp', 'Blender', 'Air Fryer', 'Toaster'],
+    images: [
+      'https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=600&q=80',
+      'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&q=80',
+      'https://images.unsplash.com/photo-1596306499317-8490232098fa?w=600&q=80'
+    ],
+    prices: [499, 999, 1499, 2999, 4999, 8999]
+  },
+  'Beauty': {
+    brands: ['AromaBotanicals', 'L\'Oreal', 'CeraVe', 'Neutrogena', 'Clinique', 'Ordinary', 'Dove'],
+    adjectives: ['Organic Lavender', 'Moisturizing', 'Hydrating', 'Gentle', 'Sulfate-Free', 'Anti-Aging', 'Clarifying', 'Soothing', 'Exfoliating'],
+    nouns: ['Lotion', 'Serum', 'Cleanser', 'Face Mask', 'Sunscreen', 'Shampoo', 'Conditioner', 'Lip Balm'],
+    images: [
+      'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&q=80',
+      'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&q=80',
+      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&q=80'
+    ],
+    prices: [199, 299, 499, 799, 1199, 1899]
+  },
+  'Toys': {
+    brands: ['Lego', 'Hasbro', 'Mattel', 'BlockCraft', 'Fisher-Price', 'Nintendo', 'HotWheels'],
+    adjectives: ['Educational', 'Interactive', 'STEM', 'Building', 'Creative', 'Colorful', 'Magnetic', 'Wooden', 'Puzzle', 'Classic'],
+    nouns: ['Brick Builder', 'Board Game', 'Action Figure', 'Plush Toy', 'Model Kit', 'Card Game', 'Doll', 'Train Set'],
+    images: [
+      'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=600&q=80',
+      'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=600&q=80',
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&q=80'
+    ],
+    prices: [299, 499, 799, 1299, 1999, 2999]
+  },
+  'Books': {
+    brands: ['CodePress', 'Penguin', 'HarperCollins', 'O\'Reilly', 'Pearson', 'Bantam'],
+    adjectives: ['Advanced', 'Masterclass', 'Complete Guide to', 'Introduction to', 'Handbook of', 'Science of', 'History of', 'Art of'],
+    nouns: ['Python Programming', 'Machine Learning', 'Algorithms', 'Data Science', 'Software Engineering', 'Web Development', 'Database Systems', 'System Architecture'],
+    images: [
+      'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600&q=80',
+      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&q=80',
+      'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80'
+    ],
+    prices: [199, 299, 399, 499, 699, 999]
+  },
+  'Sports': {
+    brands: ['MatchFit', 'Wilson', 'Everlast', 'Spalding', 'Decathlon', 'Rawlings', 'AdidasSports'],
+    adjectives: ['Premium Leather', 'Waterproof', 'Pro-Grade', 'Heavy-Duty', 'Shock-Absorbing', 'Adjustable', 'Lightweight', 'Thermal Bonded'],
+    nouns: ['Soccer Ball', 'Basketball', 'Yoga Mat', 'Tennis Racket', 'Dumbbell Set', 'Fitness Band', 'Punching Bag', 'Jump Rope'],
+    images: [
+      'https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=600&q=80',
+      'https://images.unsplash.com/photo-1518063319789-7217e6706b04?w=600&q=80',
+      'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&q=80'
+    ],
+    prices: [299, 499, 899, 1499, 2499, 4999]
+  }
+};
+
+const FASHION_GENERATOR_CONFIG = [
+  {
+    subCategory: 'Clothing',
+    gender: 'Men',
+    types: ['T-Shirt', 'Shirt', 'Jeans', 'Trousers', 'Jacket', 'Hoodie'],
+    brands: ['Nike', 'Adidas', 'Puma', 'Zara', 'H&M', 'Levi\'s', 'Tommy Hilfiger', 'Polo'],
+    adjectives: ['Casual Fit', 'Slim Fit', 'Cotton Rich', 'Distressed', 'Lightweight', 'Thermal Fleece', 'Windbreaker', 'Graphic Print'],
+    count: 52,
+    images: [
+      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&q=80',
+      'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&q=80',
+      'https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&q=80',
+      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&q=80'
+    ],
+    prices: [699, 999, 1499, 1999, 2499, 3499]
+  },
+  {
+    subCategory: 'Clothing',
+    gender: 'Women',
+    types: ['Saree', 'Kurti', 'Dress', 'Top', 'Jeans', 'Jacket'],
+    brands: ['Biba', 'Zara', 'H&M', 'FabIndia', 'W', 'Aurelia', 'Forever 21', 'Allen Solly'],
+    adjectives: ['Embroidered Silk', 'Anarkali Cotton', 'Floral Maxi', 'Ruffled', 'High Rise Slim', 'Faux Leather', 'Designer Georgette', 'Casual Solid'],
+    count: 52,
+    images: [
+      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&q=80',
+      'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&q=80',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80'
+    ],
+    prices: [899, 1299, 1899, 2499, 3999, 4999]
+  },
+  {
+    subCategory: 'Clothing',
+    gender: 'Kids',
+    types: ['Boys Wear', 'Girls Wear', 'School Uniform', 'Party Wear'],
+    brands: ['Gini & Jony', 'Lilliput', 'H&M Kids', 'U.S. Polo Kids', 'Mothercare', 'FirstCry'],
+    adjectives: ['Super Soft Cotton', 'Embellished', 'Smart Fit Plaid', 'Sparkly Tulle', 'Comfort Active', 'Breathable Playground'],
+    count: 32,
+    images: [
+      'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&q=80',
+      'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=600&q=80',
+      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=600&q=80'
+    ],
+    prices: [399, 599, 899, 1299, 1799, 2299]
+  },
+  {
+    subCategory: 'Footwear',
+    gender: 'Men',
+    types: ['Sports Shoes', 'Sneakers', 'Formal Shoes', 'Sandals'],
+    brands: ['Nike', 'Adidas', 'Puma', 'Woodland', 'Bata', 'Reebok', 'Red Tape', 'Hush Puppies'],
+    adjectives: ['Cushioned Outdoor', 'Classic Canvas', 'Genuine Leather Oxford', 'Comfort Grip', 'Flyknit Running', 'Slip-on Breathable'],
+    count: 42,
+    images: [
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
+      'https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&q=80',
+      'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80'
+    ],
+    prices: [1299, 1999, 2999, 3999, 5999, 8999]
+  },
+  {
+    subCategory: 'Footwear',
+    gender: 'Women',
+    types: ['Heels', 'Flats', 'Sneakers', 'Sandals'],
+    brands: ['Catwalk', 'Metro', 'Inc.5', 'Zara', 'H&M', 'Puma', 'Bata', 'Aldo'],
+    adjectives: ['Stiletto Block', 'Pointed Toe Velvet', 'Glittery Ankle Strap', 'Lace-Up Retro', 'Memory Foam Active', 'Everyday Comfort'],
+    count: 42,
+    images: [
+      'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&q=80',
+      'https://images.unsplash.com/photo-1535043934128-cf0b28d52f95?w=600&q=80',
+      'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600&q=80'
+    ],
+    prices: [999, 1499, 2299, 2999, 4499, 5999]
+  },
+  {
+    subCategory: 'Footwear',
+    gender: 'Kids',
+    types: ['School Shoes', 'Casual Shoes', 'Sports Shoes'],
+    brands: ['Bata Kids', 'Crocs Kids', 'Puma Kids', 'Nike Kids', 'Liberty', 'Adidas Kids'],
+    adjectives: ['Durable Velcro', 'Light-Up Heel', 'Anti-Slip Playground', 'Waterproof Clog', 'High-Top Skate'],
+    count: 22,
+    images: [
+      'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=600&q=80',
+      'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&q=80'
+    ],
+    prices: [499, 799, 1199, 1599, 1999]
+  },
+  {
+    subCategory: 'Eyewear',
+    gender: 'Men',
+    types: ['Sunglasses', 'Reading Glasses', 'Computer Glasses'],
+    brands: ['Ray-Ban', 'Oakley', 'LensKart', 'Fastrack', 'Vincent Chase', 'Titan Eyeplus'],
+    adjectives: ['Polarized Aviator', 'Blue Light Blocking', 'Anti-Glare Clubmaster', 'Retro Round Frame', 'TR90 Flexible'],
+    count: 16,
+    images: [
+      'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&q=80'
+    ],
+    prices: [599, 999, 1499, 1999, 2999, 4999]
+  },
+  {
+    subCategory: 'Eyewear',
+    gender: 'Women',
+    types: ['Sunglasses', 'Fashion Glasses', 'Reading Glasses'],
+    brands: ['Ray-Ban', 'Oakley', 'LensKart', 'Fastrack', 'Vincent Chase', 'Titan Eyeplus'],
+    adjectives: ['Polarized Aviator', 'Blue Light Blocking', 'Anti-Glare Clubmaster', 'Retro Round Frame', 'TR90 Flexible'],
+    count: 16,
+    images: [
+      'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&q=80'
+    ],
+    prices: [599, 999, 1499, 1999, 2999, 4999]
+  },
+  {
+    subCategory: 'Watches',
+    gender: 'Men',
+    types: ['Analog Watch', 'Chronograph Watch', 'Smart Watch'],
+    brands: ['Casio', 'Fossil', 'Titan', 'Fastrack', 'Sonata', 'Apple', 'Samsung', 'Noise'],
+    adjectives: ['Stainless Steel Chrono', 'Leather Strap Classic', 'Fitness Heart Rate Tracker', 'Water Resistant Sport', 'Minimalist Dial'],
+    count: 16,
+    images: [
+      'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=600&q=80'
+    ],
+    prices: [1499, 2499, 3999, 5999, 9999, 14999]
+  },
+  {
+    subCategory: 'Watches',
+    gender: 'Women',
+    types: ['Analog Watch', 'Smart Watch'],
+    brands: ['Casio', 'Fossil', 'Titan', 'Fastrack', 'Sonata', 'Apple', 'Samsung', 'Noise'],
+    adjectives: ['Stainless Steel Chrono', 'Leather Strap Classic', 'Fitness Heart Rate Tracker', 'Water Resistant Sport', 'Minimalist Dial'],
+    count: 16,
+    images: [
+      'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&q=80'
+    ],
+    prices: [1499, 2499, 3999, 5999, 9999, 14999]
+  },
+  {
+    subCategory: 'Bags',
+    gender: 'Men',
+    types: ['Backpack', 'Duffle Bag', 'Sling Bag'],
+    brands: ['American Tourister', 'Samsonite', 'Wildcraft', 'Skybags'],
+    adjectives: ['Water-Repellent School', 'Canvas Travel Duffle', 'Compact Messenger Sling', 'Utility Laptop Sack'],
+    count: 16,
+    images: [
+      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80'
+    ],
+    prices: [799, 1299, 1999, 2799, 3999, 5499]
+  },
+  {
+    subCategory: 'Bags',
+    gender: 'Women',
+    types: ['Handbag', 'Tote Bag', 'Sling Bag'],
+    brands: ['Caprese', 'Lavie', 'Lino Perros', 'Baggit'],
+    adjectives: ['Quilted Faux Leather Handbag', 'Classic Tote Purse', 'Elegant Leather Satchel', 'Fashion Sling Clutch'],
+    count: 16,
+    images: [
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80'
+    ],
+    prices: [799, 1299, 1999, 2799, 3999, 5499]
+  },
+  {
+    subCategory: 'Accessories',
+    gender: 'Men',
+    types: ['Belt', 'Cap', 'Wallet'],
+    brands: ['Levis', 'Tommy Hilfiger', 'Puma', 'Fastrack'],
+    adjectives: ['Genuine Leather Belt', 'Snapback Sports Cap', 'RFID Blocking Wallet', 'Classic Leather Billfold'],
+    count: 20,
+    images: [
+      'https://images.unsplash.com/photo-1624222247344-550fb8ec5b5d?w=600&q=80'
+    ],
+    prices: [299, 499, 799, 999, 1499, 1999]
+  },
+  {
+    subCategory: 'Accessories',
+    gender: 'Women',
+    types: ['Belt', 'Cap', 'Wallet', 'Jewellery', 'Scarf'],
+    brands: ['Baggit', 'Zara', 'Voylla', 'Fastrack'],
+    adjectives: ['Genuine Leather Belt', 'Snapback Sports Cap', 'RFID Blocking Wallet', 'Silver Plated Pendant', 'Floral Printed Scarf'],
+    count: 20,
+    images: [
+      'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80'
+    ],
+    prices: [299, 499, 799, 999, 1499, 1999]
+  },
+  {
+    subCategory: 'Accessories',
+    gender: 'Kids',
+    types: ['Cap', 'Scarf', 'Hair Accessories'],
+    brands: ['Gini & Jony', 'H&M Kids', 'Crocs Kids'],
+    adjectives: ['Snapback Sports Cap', 'Floral Printed Scarf', 'Premium Bow clip', 'Colorful Hairband'],
+    count: 12,
+    images: [
+      'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=600&q=80'
+    ],
+    prices: [199, 299, 499, 699, 999]
+  }
+];
+
+// Dictionary mapping each noun/type to its specific verified image URL
+const PRODUCT_IMAGE_MAP = {
+  // Electronics
+  'Headphones': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80',
+  'Speaker': 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&q=80',
+  'Keyboard': 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&q=80',
+  'Mouse': 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600&q=80',
+  'Powerbank': 'https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=600&q=80',
+  'Earbuds': 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&q=80',
+  'Smartwatch': 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=600&q=80',
+  'Monitor': 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&q=80',
+
+  // Groceries
+  'Almonds': 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=600&q=80',
+  'Oats': 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?w=600&q=80',
+  'Coffee Beans': 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&q=80',
+  'Honey': 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&q=80',
+  'Tea Bags': 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&q=80',
+  'Olive Oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&q=80',
+  'Granola': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80',
+  'Maple Syrup': 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=600&q=80',
+  'Cashew': 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=600&q=80',
+
+  // Home & Kitchen
+  'Office Chair': 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=600&q=80',
+  'Rice Cooker': 'https://images.unsplash.com/photo-1596306499317-8490232098fa?w=600&q=80',
+  'Cookware Set': 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&q=80',
+  'Water Bottle': 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&q=80',
+  'Desk Lamp': 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600&q=80',
+  'Blender': 'https://images.unsplash.com/photo-1578643463396-0997cb5328c1?w=600&q=80',
+  'Air Fryer': 'https://images.unsplash.com/photo-1621972750749-0fbb1abb7736?w=600&q=80',
+  'Toaster': 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=600&q=80',
+
+  // Beauty
+  'Lotion': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&q=80',
+  'Serum': 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=600&q=80',
+  'Cleanser': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&q=80',
+  'Face Mask': 'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=600&q=80',
+  'Sunscreen': 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=600&q=80',
+  'Shampoo': 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&q=80',
+  'Conditioner': 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=600&q=80',
+  'Lip Balm': 'https://images.unsplash.com/photo-1617897903246-719242758050?w=600&q=80',
+
+  // Toys
+  'Brick Builder': 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=600&q=80',
+  'Board Game': 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=600&q=80',
+  'Action Figure': 'https://images.unsplash.com/photo-1566577134770-3d85bb3a9cc4?w=600&q=80',
+  'Plush Toy': 'https://images.unsplash.com/photo-1559251606-c623743a6d76?w=600&q=80',
+  'Model Kit': 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=600&q=80',
+  'Card Game': 'https://images.unsplash.com/photo-1611195974226-a6a9be9dd763?w=600&q=80',
+  'Doll': 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=600&q=80',
+  'Train Set': 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=600&q=80',
+
+  // Books
+  'Python Programming': 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600&q=80',
+  'Machine Learning': 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600&q=80',
+  'Algorithms': 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&q=80',
+  'Data Science': 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&q=80',
+  'Software Engineering': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80',
+  'Web Development': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80',
+  'Database Systems': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80',
+  'System Architecture': 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600&q=80',
+
+  // Sports
+  'Soccer Ball': 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=600&q=80',
+  'Basketball': 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&q=80',
+  'Yoga Mat': 'https://images.unsplash.com/photo-1592432678016-e910b452f9a2?w=600&q=80',
+  'Tennis Racket': 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600&q=80',
+  'Dumbbell Set': 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&q=80',
+  'Fitness Band': 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&q=80',
+  'Punching Bag': 'https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=600&q=80',
+  'Jump Rope': 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&q=80',
+
+  // Fashion Clothing
+  'T-Shirt': 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&q=80',
+  'Shirt': 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600&q=80',
+  'Jeans': 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600&q=80',
+  'Trousers': 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&q=80',
+  'Jacket': 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&q=80',
+  'Hoodie': 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&q=80',
+  'Saree': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&q=80',
+  'Kurti': 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&q=80',
+  'Dress': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80',
+  'Top': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80',
+  'Boys Wear': 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&q=80',
+  'Girls Wear': 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=600&q=80',
+  'School Uniform': 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=600&q=80',
+  'Party Wear': 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=600&q=80',
+
+  // Footwear
+  'Sports Shoes': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
+  'Sneakers': 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80',
+  'Formal Shoes': 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=600&q=80',
+  'Sandals': 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600&q=80',
+  'Heels': 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&q=80',
+  'Flats': 'https://images.unsplash.com/photo-1535043934128-cf0b28d52f95?w=600&q=80',
+  'School Shoes': 'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=600&q=80',
+  'Casual Shoes': 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&q=80',
+
+  // Eyewear
+  'Sunglasses': 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&q=80',
+  'Reading Glasses': 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&q=80',
+  'Computer Glasses': 'https://images.unsplash.com/photo-1508296695146-257a814070b4?w=600&q=80',
+  'Fashion Glasses': 'https://images.unsplash.com/photo-1508296695146-257a814070b4?w=600&q=80',
+  'Protective Glasses': 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&q=80',
+
+  // Watches
+  'Analog Watch': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=600&q=80',
+  'Chronograph Watch': 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=600&q=80',
+  'Smart Watch': 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=600&q=80',
+
+  // Bags
+  'Backpack': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80',
+  'Handbag': 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80',
+  'Tote Bag': 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80',
+  'Duffle Bag': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80',
+  'Sling Bag': 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&q=80',
+
+  // Accessories
+  'Belt': 'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&q=80',
+  'Cap': 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&q=80',
+  'Wallet': 'https://images.unsplash.com/photo-1568252542512-9fe8fe9c87bb?w=600&q=80',
+  'Jewellery': 'https://images.unsplash.com/photo-1618403088890-3d9ff6f4c8b1?w=600&q=80',
+  'Hair Accessories': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&q=80',
+  'Scarf': 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80'
+};
+
+const FASHION_GENDER_IMAGE_MAP = {
+  // Men Clothing
+  'Men_T-Shirt': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&q=80',
+  'Men_Shirt': 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&q=80',
+  'Men_Jeans': 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=600&q=80',
+  'Men_Trousers': 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&q=80',
+  'Men_Jacket': 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=600&q=80',
+  'Men_Hoodie': 'https://images.unsplash.com/photo-1608063615781-e2ef8c73d114?w=600&q=80',
+
+  // Men Footwear
+  'Men_Sports Shoes': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
+  'Men_Sneakers': 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80',
+  'Men_Formal Shoes': 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=600&q=80',
+  'Men_Sandals': 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=600&q=80',
+
+  // Men Eyewear
+  'Men_Sunglasses': 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&q=80',
+  'Men_Reading Glasses': 'https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=600&q=80',
+  'Men_Computer Glasses': 'https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=600&q=80',
+
+  // Men Bags
+  'Men_Backpack': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80',
+  'Men_Handbag': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80',
+  'Men_Tote Bag': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80',
+  'Men_Duffle Bag': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80',
+  'Men_Sling Bag': 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&q=80',
+
+  // Men Watches
+  'Men_Analog Watch': 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=600&q=80',
+  'Men_Chronograph Watch': 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=600&q=80',
+  'Men_Smart Watch': 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&q=80',
+
+  // Men Accessories
+  'Men_Belt': 'https://images.unsplash.com/photo-1624222247344-550fb8ec5b5d?w=600&q=80',
+  'Men_Cap': 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&q=80',
+  'Men_Wallet': 'https://images.unsplash.com/photo-1627124118303-624c8f94e224?w=600&q=80',
+
+  // Women Clothing
+  'Women_T-Shirt': 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&q=80',
+  'Women_Shirt': 'https://images.unsplash.com/photo-1607345366928-199ea26cfe3e?w=600&q=80',
+  'Women_Jeans': 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600&q=80',
+  'Women_Jacket': 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=600&q=80',
+  'Women_Dress': 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600&q=80',
+  'Women_Saree': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&q=80',
+  'Women_Kurti': 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&q=80',
+  'Women_Top': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&q=80',
+
+  // Women Footwear
+  'Women_Heels': 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&q=80',
+  'Women_Flats': 'https://images.unsplash.com/photo-1535043934128-cf0b28d52f95?w=600&q=80',
+  'Women_Sneakers': 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600&q=80',
+  'Women_Sandals': 'https://images.unsplash.com/photo-1535043934128-cf0b28d52f95?w=600&q=80',
+  'Women_Sports Shoes': 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600&q=80',
+
+  // Women Eyewear
+  'Women_Sunglasses': 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&q=80',
+  'Women_Fashion Glasses': 'https://images.unsplash.com/photo-1508296695146-257a814070b4?w=600&q=80',
+  'Women_Reading Glasses': 'https://images.unsplash.com/photo-1508296695146-257a814070b4?w=600&q=80',
+
+  // Women Bags
+  'Women_Backpack': 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80',
+  'Women_Handbag': 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80',
+  'Women_Tote Bag': 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80',
+  'Women_Duffle Bag': 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80',
+  'Women_Sling Bag': 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80',
+
+  // Women Watches
+  'Women_Analog Watch': 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&q=80',
+  'Women_Smart Watch': 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&q=80',
+
+  // Women Accessories
+  'Women_Jewellery': 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80',
+  'Women_Hair Accessories': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&q=80',
+  'Women_Scarf': 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&q=80',
+  'Women_Belt': 'https://images.unsplash.com/photo-1618403088890-3d9ff6f4c8b1?w=600&q=80',
+  'Women_Cap': 'https://images.unsplash.com/photo-1508296695146-257a814070b4?w=600&q=80',
+  'Women_Wallet': 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&q=80',
+
+  // Kids Clothing
+  'Kids_Boys Wear': 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&q=80',
+  'Kids_Girls Wear': 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=600&q=80',
+  'Kids_School Uniform': 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=600&q=80',
+  'Kids_Party Wear': 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=600&q=80',
+
+  // Kids Footwear
+  'Kids_School Shoes': 'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=600&q=80',
+  'Kids_Casual Shoes': 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&q=80',
+  'Kids_Sports Shoes': 'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=600&q=80',
+
+  // Kids Accessories
+  'Kids_Cap': 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=600&q=80',
+  'Kids_Scarf': 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=600&q=80',
+  'Kids_Hair Accessories': 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=600&q=80'
+};
+
+// Generate products from ID 13 onwards
+let nextId = 13;
+Object.entries(NON_FASHION_CATEGORIES).forEach(([category, meta]) => {
+  for (let i = 0; i < 20; i++) {
+    const brand = meta.brands[i % meta.brands.length];
+    const adj = meta.adjectives[i % meta.adjectives.length];
+    const noun = meta.nouns[i % meta.nouns.length];
+    const image = PRODUCT_IMAGE_MAP[noun] || meta.images[i % meta.images.length];
+    const name = `${brand} ${adj} ${noun}`;
+    const priceVal = meta.prices[i % meta.prices.length];
+    const discountPercentage = (i % 4 === 0) ? 20 : (i % 3 === 0) ? 15 : (i % 5 === 0) ? 10 : 0;
+    const price = parseFloat((priceVal * (1 - discountPercentage / 100)).toFixed(0));
+    const stock = (i % 8 === 0) ? 0 : 5 + (i * 11) % 90;
+    const description = `This premium ${name.toLowerCase()} is designed for durability and high-performance, meeting top-tier specifications in the ${category.toLowerCase()} category.`;
+
+    products.push({
+      id: nextId++,
+      name,
+      category,
+      brand,
+      image,
+      images: [image],
+      description,
+      price,
+      stock
+    });
+  }
+});
+
+FASHION_GENERATOR_CONFIG.forEach(cfg => {
+  for (let i = 0; i < cfg.count; i++) {
+    const brand = cfg.brands[i % cfg.brands.length];
+    const adj = cfg.adjectives[i % cfg.adjectives.length];
+    const pType = cfg.types[i % cfg.types.length];
+    
+    const gender = cfg.gender;
+    const genderKey = `${gender}_${pType}`;
+    const image = FASHION_GENDER_IMAGE_MAP[genderKey] || PRODUCT_IMAGE_MAP[pType] || cfg.images[i % cfg.images.length];
+
+    // Prepend gender and handle name formatting/deduplication
+    let name = `${gender}'s ${brand} ${adj}`;
+    if (!adj.toLowerCase().endsWith(pType.toLowerCase())) {
+      name += ` ${pType}`;
+    }
+
+    const priceVal = cfg.prices[i % cfg.prices.length];
+    const discountPercentage = (i % 4 === 0) ? 20 : (i % 3 === 0) ? 15 : (i % 5 === 0) ? 10 : 0;
+    const price = parseFloat((priceVal * (1 - discountPercentage / 100)).toFixed(0));
+    const stock = (i % 12 === 0) ? 0 : 4 + (i * 17) % 80;
+    const description = `This stylish ${name.toLowerCase()} offers standard-setting quality and fit. Crafted with modern styling, it is a key piece in our collection.`;
+
+    products.push({
+      id: nextId++,
+      name,
+      category: 'Fashion',
+      subCategory: cfg.subCategory,
+      gender,
+      productType: pType,
+      brand,
+      image,
+      images: [image],
+      description,
+      price,
+      stock
+    });
+  }
+});
 
 // In-memory tables
 export const users = [];

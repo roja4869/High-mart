@@ -17,7 +17,7 @@ export const protect = async (req, res, next) => {
 
       // Find user from db
       const result = await db.execute({
-        sql: "SELECT id, name, email, phone, role FROM users WHERE id = ?",
+        sql: "SELECT id, name, email, phone, role, avatar, gender, dob, bio, created_at FROM users WHERE id = ?",
         args: [decoded.id]
       });
 
