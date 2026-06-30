@@ -112,12 +112,14 @@ const App = () => {
       }
     };
     fetchWishlist();
-  }, [currentUser]);
-
+  }, []);
   const logout = () => {
     authService.logout();
     setCurrentUser(null);
+    setWishlist([]);
   };
+
+  const updateCartQuantity = updateQuantity;
 
   const syncCart = async () => {
     // 1. Sync cart

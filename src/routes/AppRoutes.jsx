@@ -1,8 +1,9 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Home from '../pages/Home';
 import Dashboard from '../pages/Dashboard';
 import Profile from '../pages/Profile/Profile';
+import Orders from '../pages/Orders/Orders';
 import Login from '../components/Login';
 import Register from '../components/Register';
 import AdminDashboard from '../srinivas/AdminDashboard';
@@ -15,7 +16,8 @@ import { authService } from '../services/authService';
 // Guard for protected routes (e.g. Dashboard)
 const ProtectedRoute = ({ children }) => {
   const isAuth = authService.isAuthenticated();
-  if (!isAuth) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  if (!isAuth) return <Navigate to="/login" replace state={{ from: location }} />;
   
   const currentUser = authService.getCurrentUser();
   if (currentUser?.role === 'admin') {
@@ -94,6 +96,22 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/orders" 
+        element={
+          <ProtectedRoute>
+            <CustomerRoute><Orders /></CustomerRoute>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/wishlist" 
+        element={
+          <ProtectedRoute>
+            <CustomerRoute><Wishlist /></CustomerRoute>
           </ProtectedRoute>
         } 
       />

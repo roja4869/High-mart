@@ -2,7 +2,13 @@ import React, { useContext } from 'react';
 import { CartContext } from '../../context/CartContext';
 import { AppContext } from '../../App';
 import { Star, ShoppingCart, Heart, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
 import './ProductCard.css';
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 25 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+};
 
 const ProductCard = ({ product, onPreview }) => {
   const { cart, addToCart, updateQuantity, removeFromCart } = useContext(CartContext);
@@ -14,7 +20,11 @@ const ProductCard = ({ product, onPreview }) => {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <div className="product-card-container glass-effect animate-fade-in">
+    <motion.div 
+      variants={cardVariants}
+      whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+      className="product-card-container glass-effect"
+    >
       <div className="product-image-wrapper">
         <img 
           src={product.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'} 
@@ -139,7 +149,7 @@ const ProductCard = ({ product, onPreview }) => {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
