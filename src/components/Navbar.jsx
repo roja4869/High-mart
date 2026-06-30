@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AppContext } from '../App';
 import { ShoppingCart, Heart, Menu, X, ShoppingBag, Sun, Moon, Search } from 'lucide-react';
+import ProfileDropdown from './ProfileDropdown';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -155,6 +156,9 @@ const Navbar = () => {
                   )}
                 </Link>
               )}
+
+              {/* Profile Dropdown */}
+              <ProfileDropdown />
 
               {/* User Account avatar badge */}
               {currentUser && (

@@ -5,7 +5,7 @@ import { authService } from '../services/authService';
 import { productService } from '../services/productService';
 import { categoryService } from '../services/categoryService';
 import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy, ShoppingBag } from 'lucide-react';
-import { ScrollAnimate, StaggerContainer, StaggerItem } from '../components/ScrollAnimate';
+import { motion } from 'framer-motion';
 import './Home.css';
 
 // Meta mapping for category icons and styles to preserve premium aesthetic
@@ -30,6 +30,33 @@ const REVIEWS = [
   { id: 2, name: 'David Miller', stars: 5, comment: 'Bought the wireless headphones during the Flash Sale. The discount was genuine and the quality is outstanding. Highly recommend!', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80' },
   { id: 3, name: 'Elena Rostova', stars: 4, comment: 'Great customer support! I had to return a cookware set because of sizing, and the refund process was completed in 24 hours without issues.', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80' }
 ];
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: "easeOut" } 
+  }
+};
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: "easeOut" } 
+  }
+};
 
 const Home = () => {
   const navigate = useNavigate();
@@ -150,7 +177,13 @@ const Home = () => {
   return (
     <div className="home-page-container">
       {/* 1. Hero Section */}
-      <ScrollAnimate className="hero-section">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="hero-section"
+      >
         {/* Floating background elements */}
         <div className="hero-floating-icons">
           <ShoppingCart className="hero-float icon-f1" size={24} />
@@ -172,35 +205,61 @@ const Home = () => {
             <img src="/assets/hero_banner_3d.png" alt="High Mart Hero Shopping" className="hero-illustration-img" />
           </div>
         </div>
-      </ScrollAnimate>
+      </motion.div>
 
       {/* 2. Categories Section */}
-      <ScrollAnimate className="categories-section section-padding" id="categories">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="categories-section section-padding"
+        id="categories"
+      >
         <div className="section-header-title">
           <h2>Shop by Category</h2>
           <p>Explore our wide range of premium curated collections</p>
         </div>
 
-        <StaggerContainer className="categories-grid">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          className="categories-grid"
+        >
           {categories.map((cat) => {
             const meta = getCategoryMeta(cat.name);
             const count = productsList.filter(p => p.category === cat.name).length;
 
             return (
-              <StaggerItem key={cat.id} className="category-card" scaleOnHover={true} onClick={() => handleCategoryScroll(cat.name)}>
-                <div className={`category-icon-box ${meta.grad}`}>
+              <motion.div
+                key={cat.id}
+                variants={cardVariants}
+                whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+                className="category-card"
+                onClick={() => handleCategoryScroll(cat.name)}
+              >
+                <div className={"category-icon-box " + meta.grad}>
                   <img src={meta.img} alt={cat.name} className="category-3d-icon" />
                 </div>
                 <h3>{cat.name}</h3>
                 <span className="category-count">{count > 0 ? `${count}+ Products` : 'No Products'}</span>
-              </StaggerItem>
+              </motion.div>
             );
           })}
-        </StaggerContainer>
-      </ScrollAnimate>
+        </motion.div>
+      </motion.div>
 
       {/* 3. Special Offers Section (Flash Sale & Banners) */}
-      <ScrollAnimate className="offers-section section-padding" id="deals">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="offers-section section-padding"
+        id="deals"
+      >
         <div className="offers-container">
           {/* Flash Sale Left Banner */}
           <div className="flash-sale-banner">
@@ -240,20 +299,38 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </ScrollAnimate>
+      </motion.div>
 
       {/* 4. Featured Products Section */}
-      <ScrollAnimate className="products-section section-padding" id="featured">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="products-section section-padding"
+        id="featured"
+      >
         <div className="section-header-title">
           <h2>Featured Products</h2>
           <p>Explore today's trending premium recommendations</p>
         </div>
 
-        <StaggerContainer className="products-grid">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          className="products-grid"
+        >
           {productsList.map(product => {
             const isWishlisted = wishlist.some(item => item.id === product.id);
             return (
-              <StaggerItem key={product.id} className="product-card" scaleOnHover={true}>
+              <motion.div
+                key={product.id}
+                variants={cardVariants}
+                whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+                className="product-card"
+              >
                 {/* Image and badges */}
                 <div className="product-image-box">
                   <Link to={`/product/${product.id}`}>
@@ -309,14 +386,20 @@ const Home = () => {
                     )}
                   </div>
                 </div>
-              </StaggerItem>
+              </motion.div>
             );
           })}
-        </StaggerContainer>
-      </ScrollAnimate>
+        </motion.div>
+      </motion.div>
 
       {/* 5. Why Choose High Mart Section */}
-      <ScrollAnimate className="benefits-section section-padding">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="benefits-section section-padding"
+      >
         <div className="section-header-title">
           <h2>Why Customers Shop with Us</h2>
           <p>Unmatched convenience, security, and quality guarantees</p>
@@ -359,10 +442,17 @@ const Home = () => {
             <p>Reach customer care via live ticket channels, email inbox, or toll-free hotlines anytime.</p>
           </div>
         </div>
-      </ScrollAnimate>
+      </motion.div>
 
       {/* 6. Customer Reviews Carousel Section */}
-      <ScrollAnimate className="reviews-section section-padding" id="reviews">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="reviews-section section-padding"
+        id="reviews"
+      >
         <div className="section-header-title">
           <h2>What Shoppers Say</h2>
           <p>Read honest feedback from verified buyers across the globe</p>
@@ -399,10 +489,16 @@ const Home = () => {
             <ChevronRight size={20} />
           </button>
         </div>
-      </ScrollAnimate>
+      </motion.div>
 
       {/* 7. Newsletter Section */}
-      <ScrollAnimate className="newsletter-section section-padding">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="newsletter-section section-padding"
+      >
         <div className="newsletter-card glass-effect">
           <div className="newsletter-icon-box">
             <Mail size={32} />
@@ -420,7 +516,7 @@ const Home = () => {
             <button type="submit">Subscribe</button>
           </form>
         </div>
-      </ScrollAnimate>
+      </motion.div>
     </div>
   );
 };
