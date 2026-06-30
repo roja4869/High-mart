@@ -2,13 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { AppContext } from '../App';
 import { productService } from '../services/productService';
-import { Star, ShoppingCart, Heart, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight, X, Eye, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Star, ShoppingCart, Heart, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight, X, Eye, ShieldCheck, HelpCircle, Plus, Minus } from 'lucide-react';
 import './ProductList.css';
 
 const ITEMS_PER_PAGE = 6;
 
 const ProductList = () => {
-  const { addToCart, toggleWishlist, wishlist } = useContext(AppContext);
+  const { cart, addToCart, updateCartQuantity, toggleWishlist, wishlist, user } = useContext(AppContext);
+  const isAdmin = user?.role === 'admin';
   const [searchParams, setSearchParams] = useSearchParams();
   console.log("[RENDER] ProductList Component", searchParams.toString());
 
@@ -139,10 +140,10 @@ const ProductList = () => {
     // Search Query (name/brand/category/description)
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const matchName = product.name.toLowerCase().includes(q);
-      const matchBrand = product.brand.toLowerCase().includes(q);
-      const matchCat = product.category.toLowerCase().includes(q);
-      const matchDesc = product.description.toLowerCase().includes(q);
+      const matchName = (product.name || '').toLowerCase().includes(q);
+      const matchBrand = (product.brand || '').toLowerCase().includes(q);
+      const matchCat = (product.category || '').toLowerCase().includes(q);
+      const matchDesc = (product.description || '').toLowerCase().includes(q);
       if (!matchName && !matchBrand && !matchCat && !matchDesc) return false;
     }
 
@@ -566,13 +567,15 @@ const ProductList = () => {
                       </div>
 
                       {/* Wishlist Icon */}
-                      <button 
-                        onClick={() => toggleWishlist(product)}
-                        className={`wishlist-toggle-btn ${isWishlisted ? 'active' : ''}`}
-                        aria-label="Add to Wishlist"
-                      >
-                        <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} />
-                      </button>
+                      {!isAdmin && (
+                        <button 
+                          onClick={() => toggleWishlist(product)}
+                          className={`wishlist-toggle-btn ${isWishlisted ? 'active' : ''}`}
+                          aria-label="Add to Wishlist"
+                        >
+                          <Heart size={16} fill={isWishlisted ? '#ef4444' : 'none'} />
+                        </button>
+                      )}
 
                       {/* Quick view overlay button */}
                       <div className="card-quick-overlay">
@@ -622,14 +625,45 @@ const ProductList = () => {
                             <span className="old-price">₹{product.price.toFixed(2)}</span>
                           )}
                         </div>
-                        <button 
-                          onClick={() => addToCart(product)}
-                          className="add-to-cart-btn"
-                          aria-label="Add product to Cart"
-                          disabled={product.stockStatus === 'Out of Stock'}
-                        >
-                          <ShoppingCart size={16} />
-                        </button>
+                        {isAdmin ? (
+                          <span className="admin-view-badge" style={{ fontSize: '11px', padding: '3px 6px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.2)', fontWeight: 'bold' }}>
+                            Monitoring
+                          </span>
+                        ) : (() => {
+                          const cartItem = cart && cart.find(item => item.id === product.id);
+                          if (cartItem) {
+                            return (
+                              <div className="cart-qty-selector-flipkart">
+                                <button 
+                                  onClick={() => updateCartQuantity(product.id, cartItem.quantity - 1)}
+                                  className="qty-flipkart-btn minus"
+                                  aria-label="Decrease Quantity"
+                                >
+                                  <Minus size={12} />
+                                </button>
+                                <span className="qty-flipkart-val">{cartItem.quantity}</span>
+                                <button 
+                                  onClick={() => updateCartQuantity(product.id, cartItem.quantity + 1)}
+                                  className="qty-flipkart-btn plus"
+                                  aria-label="Increase Quantity"
+                                  disabled={product.stock !== undefined && cartItem.quantity >= product.stock}
+                                >
+                                  <Plus size={12} />
+                                </button>
+                              </div>
+                            );
+                          }
+                          return (
+                            <button 
+                              onClick={() => addToCart(product)}
+                              className="add-to-cart-btn"
+                              aria-label="Add product to Cart"
+                              disabled={product.stockStatus === 'Out of Stock'}
+                            >
+                              <ShoppingCart size={16} />
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

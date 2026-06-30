@@ -4,12 +4,12 @@
 
 /* Design Tokens & Variables */
 :root {
-  --cart-primary: #4F46E5;
-  --cart-primary-hover: #4338CA;
-  --cart-secondary: #06B6D4;
-  --cart-secondary-hover: #0891B2;
-  --cart-accent: #F59E0B;
-  --cart-accent-hover: #D97706;
+  --cart-primary: var(--primary-color);
+  --cart-primary-hover: var(--primary-hover);
+  --cart-secondary: var(--secondary-color);
+  --cart-secondary-hover: var(--secondary-hover);
+  --cart-accent: var(--secondary-color);
+  --cart-accent-hover: var(--secondary-hover);
   
   --cart-bg-light: #F9FAFB;
   --cart-bg-card: #FFFFFF;

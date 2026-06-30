@@ -61,5 +61,16 @@ export const cartService = {
       console.error('Failed to remove item from cart:', error.message);
       throw error;
     }
+  },
+
+  // Clear entire cart
+  async clearCart() {
+    try {
+      const response = await api.delete('/cart');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to clear cart:', error.message);
+      throw error;
+    }
   }
 };

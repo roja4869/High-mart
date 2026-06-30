@@ -8,7 +8,8 @@ import './ProductDetail.css';
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart, toggleWishlist, wishlist, addToast } = useContext(AppContext);
+  const { addToCart, toggleWishlist, wishlist, addToast, user } = useContext(AppContext);
+  const isAdmin = user?.role === 'admin';
 
   // Component State
   const [product, setProduct] = useState(null);
@@ -236,13 +237,15 @@ const ProductDetail = () => {
             <div className="image-magnifier-lens" style={zoomStyle}></div>
             
             {/* Wishlist badge overlay */}
-            <button 
-              onClick={() => toggleWishlist(product)}
-              className={`wishlist-badge-detail ${isWishlisted ? 'active' : ''}`}
-              aria-label="Add to Wishlist"
-            >
-              <Heart size={20} fill={isWishlisted ? '#ef4444' : 'none'} />
-            </button>
+            {!isAdmin && (
+              <button 
+                onClick={() => toggleWishlist(product)}
+                className={`wishlist-badge-detail ${isWishlisted ? 'active' : ''}`}
+                aria-label="Add to Wishlist"
+              >
+                <Heart size={20} fill={isWishlisted ? '#ef4444' : 'none'} />
+              </button>
+            )}
           </div>
 
           {/* Thumbnails row below */}
@@ -400,48 +403,58 @@ const ProductDetail = () => {
               QUANTITY SELECTOR AND ACTION BUTTONS
               ============================================== */}
           <div className="quantity-action-container">
-            <div className="quantity-selector-box">
-              <button 
-                onClick={handleDecrement}
-                className="qty-btn"
-                aria-label="Decrease Quantity"
-              >
-                <Minus size={15} />
-              </button>
-              <input 
-                type="number" 
-                value={quantity} 
-                onChange={handleQuantityInputChange}
-                className="qty-input"
-                min="1"
-                aria-label="Quantity Count"
-              />
-              <button 
-                onClick={handleIncrement}
-                className="qty-btn"
-                aria-label="Increase Quantity"
-              >
-                <Plus size={15} />
-              </button>
-            </div>
+            {!isAdmin && (
+              <div className="quantity-selector-box">
+                <button 
+                  onClick={handleDecrement}
+                  className="qty-btn"
+                  aria-label="Decrease Quantity"
+                >
+                  <Minus size={15} />
+                </button>
+                <input 
+                  type="number" 
+                  value={quantity} 
+                  onChange={handleQuantityInputChange}
+                  className="qty-input"
+                  min="1"
+                  aria-label="Quantity Count"
+                />
+                <button 
+                  onClick={handleIncrement}
+                  className="qty-btn"
+                  aria-label="Increase Quantity"
+                >
+                  <Plus size={15} />
+                </button>
+              </div>
+            )}
 
             <div className="action-buttons-group">
-              <button 
-                onClick={handleAddToCart}
-                className="add-cart-primary-btn"
-                disabled={product.stockStatus === 'Out of Stock'}
-              >
-                <ShoppingCart size={18} />
-                <span>Add to Cart</span>
-              </button>
+              {isAdmin ? (
+                <div className="admin-detail-notice" style={{ padding: '12px 16px', background: 'rgba(167, 139, 250, 0.1)', border: '1px solid rgba(167, 139, 250, 0.2)', borderRadius: '8px', color: '#a78bfa', fontSize: '14px', fontWeight: '500', marginRight: '10px' }}>
+                  Monitoring Mode: Administrators cannot purchase products.
+                </div>
+              ) : (
+                <>
+                  <button 
+                    onClick={handleAddToCart}
+                    className="add-cart-primary-btn"
+                    disabled={product.stockStatus === 'Out of Stock'}
+                  >
+                    <ShoppingCart size={18} />
+                    <span>Add to Cart</span>
+                  </button>
 
-              <button 
-                onClick={handleBuyNow}
-                className="buy-now-secondary-btn"
-                disabled={product.stockStatus === 'Out of Stock'}
-              >
-                Buy Now
-              </button>
+                  <button 
+                    onClick={handleBuyNow}
+                    className="buy-now-secondary-btn"
+                    disabled={product.stockStatus === 'Out of Stock'}
+                  >
+                    Buy Now
+                  </button>
+                </>
+              )}
 
               <button 
                 onClick={handleShare}
@@ -634,13 +647,15 @@ const ProductDetail = () => {
                   </div>
                   <div className="price-add-row">
                     <span className="related-price">₹{(p.price * (1 - p.discount / 100)).toFixed(2)}</span>
-                    <button 
-                      onClick={() => addToCart(p)}
-                      className="related-add-btn"
-                      aria-label="Add to Cart"
-                    >
-                      <ShoppingCart size={13} />
-                    </button>
+                    {!isAdmin && (
+                      <button 
+                        onClick={() => addToCart(p)}
+                        className="related-add-btn"
+                        aria-label="Add to Cart"
+                      >
+                        <ShoppingCart size={13} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

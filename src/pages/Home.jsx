@@ -3,20 +3,26 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
 import { productService } from '../services/productService';
-import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy } from 'lucide-react';
+import { categoryService } from '../services/categoryService';
+import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy, ShoppingBag } from 'lucide-react';
+import { ScrollAnimate, StaggerContainer, StaggerItem } from '../components/ScrollAnimate';
 import './Home.css';
 
-// Mock Products Data
-const FEATURED_PRODUCTS = [
-  { id: 4, name: 'Premium Organic Almonds (1kg)', category: 'Groceries', price: 14.99, rating: 4.8, discount: 10, image: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400&q=80' },
-  { id: 1, name: 'Wireless Over-Ear ANC Headphones', category: 'Electronics', price: 129.99, rating: 4.9, discount: 20, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
-  { id: 2, name: 'Minimalist Quartz Leather Watch', category: 'Fashion', price: 79.99, rating: 4.6, discount: 15, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
-  { id: 5, name: 'Ergonomic Adjustable Office Chair', category: 'Home & Kitchen', price: 149.99, rating: 4.8, discount: 12, image: 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?w=400&q=80' },
-  { id: 3, name: 'Smart Fitness Tracker & HR Monitor', category: 'Electronics', price: 49.99, rating: 4.5, discount: 25, image: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=400&q=80' },
-  { id: 6, name: 'Non-Stick Ceramic Cookware Set', category: 'Home & Kitchen', price: 89.99, rating: 4.7, discount: 30, image: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=400&q=80' },
-  { id: 7, name: 'Organic Lavender Soothing Lotion', category: 'Beauty', price: 18.99, rating: 4.6, discount: 5, image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&q=80' },
-  { id: 8, name: 'Vintage Waterproof Canvas Backpack', category: 'Fashion', price: 59.99, rating: 4.7, discount: 10, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80' }
-];
+// Meta mapping for category icons and styles to preserve premium aesthetic
+const CATEGORY_META = {
+  'Groceries': { img: '/assets/3d_icons/groceries.png', grad: 'cat-grad-1' },
+  'Electronics': { img: '/assets/3d_icons/electronics.png', grad: 'cat-grad-2' },
+  'Fashion': { img: '/assets/3d_icons/fashion.png', grad: 'cat-grad-3' },
+  'Books': { img: '/assets/3d_icons/books.png', grad: 'cat-grad-4' },
+  'Toys': { img: '/assets/3d_icons/toys.png', grad: 'cat-grad-5' },
+  'Home & Kitchen': { img: '/assets/3d_icons/home_kitchen.png', grad: 'cat-grad-6' },
+  'Beauty': { img: '/assets/3d_icons/beauty.png', grad: 'cat-grad-7' },
+  'Sports': { img: '/assets/3d_icons/sports.png', grad: 'cat-grad-8' }
+};
+
+const getCategoryMeta = (name) => {
+  return CATEGORY_META[name] || { img: '/assets/3d_icons/groceries.png', grad: 'cat-grad-1' };
+};
 
 // Mock Reviews
 const REVIEWS = [
@@ -28,8 +34,10 @@ const REVIEWS = [
 const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { addToCart, toggleWishlist, wishlist, addToast } = useContext(AppContext);
+  const { addToCart, toggleWishlist, wishlist, addToast, user } = useContext(AppContext);
+  const isAdmin = user?.role === 'admin';
   const [productsList, setProductsList] = useState([]);
+  const [categories, setCategories] = useState([]);
   console.log("[RENDER] Home Component", location);
 
   useEffect(() => {
@@ -39,7 +47,7 @@ const Home = () => {
         if (response.success || Array.isArray(response)) {
           const list = response.products || response;
           const mapped = list.map(p => {
-            const isFullUrl = p.image && (p.image.startsWith('http://') || p.image.startsWith('https://'));
+            const isFullUrl = p.image && (p.image.startsWith('http://') || p.image.startsWith('https://') || p.image.startsWith('/uploads/'));
             return {
               ...p,
               image: isFullUrl ? p.image : `/uploads/${p.image}`,
@@ -50,16 +58,24 @@ const Home = () => {
           setProductsList(mapped);
         }
       } catch (err) {
-        console.warn("Failed to load products from backend, falling back to static featured products.", err.message);
-        const mappedFallback = FEATURED_PRODUCTS.map(p => ({
-          ...p,
-          rating: p.rating || 4.5,
-          discount: p.discount || 10
-        }));
-        setProductsList(mappedFallback);
+        console.error("Failed to load products from backend:", err.message);
+        setProductsList([]);
       }
     };
+    
+    const fetchCategories = async () => {
+      try {
+        const res = await categoryService.getCategories();
+        if (res && res.categories) {
+          setCategories(res.categories);
+        }
+      } catch (err) {
+        console.error('Failed to load categories in Home:', err.message);
+      }
+    };
+
     loadProducts();
+    fetchCategories();
   }, []);
 
   // useEffect(() => {
@@ -134,7 +150,7 @@ const Home = () => {
   return (
     <div className="home-page-container">
       {/* 1. Hero Section */}
-      <section className="hero-section">
+      <ScrollAnimate className="hero-section">
         {/* Floating background elements */}
         <div className="hero-floating-icons">
           <ShoppingCart className="hero-float icon-f1" size={24} />
@@ -153,95 +169,38 @@ const Home = () => {
             </div>
           </div>
           <div className="hero-image-content">
-            <img src="/assets/hero_banner.png" alt="High Mart Hero Shopping" className="hero-illustration-img" />
+            <img src="/assets/hero_banner_3d.png" alt="High Mart Hero Shopping" className="hero-illustration-img" />
           </div>
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 2. Categories Section */}
-      <section className="categories-section section-padding" id="categories">
+      <ScrollAnimate className="categories-section section-padding" id="categories">
         <div className="section-header-title">
           <h2>Shop by Category</h2>
           <p>Explore our wide range of premium curated collections</p>
         </div>
 
-        <div className="categories-grid">
-          {/* Card 1: Groceries */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Groceries')}>
-            <div className="category-icon-box cat-grad-1">
-              <Apple size={28} />
-            </div>
-            <h3>Groceries</h3>
-            <span className="category-count">1,200+ Products</span>
-          </div>
+        <StaggerContainer className="categories-grid">
+          {categories.map((cat) => {
+            const meta = getCategoryMeta(cat.name);
+            const count = productsList.filter(p => p.category === cat.name).length;
 
-          {/* Card 2: Electronics */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Electronics')}>
-            <div className="category-icon-box cat-grad-2">
-              <Smartphone size={28} />
-            </div>
-            <h3>Electronics</h3>
-            <span className="category-count">850+ Products</span>
-          </div>
-
-          {/* Card 3: Fashion */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Fashion')}>
-            <div className="category-icon-box cat-grad-3">
-              <Shirt size={28} />
-            </div>
-            <h3>Fashion</h3>
-            <span className="category-count">3,100+ Products</span>
-          </div>
-
-          {/* Card 4: Books */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Books')}>
-            <div className="category-icon-box cat-grad-4">
-              <BookOpen size={28} />
-            </div>
-            <h3>Books</h3>
-            <span className="category-count">450+ Products</span>
-          </div>
-
-          {/* Card 5: Toys */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Toys')}>
-            <div className="category-icon-box cat-grad-5">
-              <ToyBrick size={28} />
-            </div>
-            <h3>Toys</h3>
-            <span className="category-count">620+ Products</span>
-          </div>
-
-          {/* Card 6: Home & Kitchen */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Home & Kitchen')}>
-            <div className="category-icon-box cat-grad-6">
-              <HomeIcon size={28} />
-            </div>
-            <h3>Home & Kitchen</h3>
-            <span className="category-count">940+ Products</span>
-          </div>
-
-          {/* Card 7: Beauty */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Beauty')}>
-            <div className="category-icon-box cat-grad-7">
-              <Sparkles size={28} />
-            </div>
-            <h3>Beauty</h3>
-            <span className="category-count">1,100+ Products</span>
-          </div>
-
-          {/* Card 8: Sports */}
-          <div className="category-card" onClick={() => handleCategoryScroll('Sports')}>
-            <div className="category-icon-box cat-grad-8">
-              <Trophy size={28} />
-            </div>
-            <h3>Sports</h3>
-            <span className="category-count">380+ Products</span>
-          </div>
-        </div>
-      </section>
+            return (
+              <StaggerItem key={cat.id} className="category-card" scaleOnHover={true} onClick={() => handleCategoryScroll(cat.name)}>
+                <div className={`category-icon-box ${meta.grad}`}>
+                  <img src={meta.img} alt={cat.name} className="category-3d-icon" />
+                </div>
+                <h3>{cat.name}</h3>
+                <span className="category-count">{count > 0 ? `${count}+ Products` : 'No Products'}</span>
+              </StaggerItem>
+            );
+          })}
+        </StaggerContainer>
+      </ScrollAnimate>
 
       {/* 3. Special Offers Section (Flash Sale & Banners) */}
-      <section className="offers-section section-padding" id="deals">
+      <ScrollAnimate className="offers-section section-padding" id="deals">
         <div className="offers-container">
           {/* Flash Sale Left Banner */}
           <div className="flash-sale-banner">
@@ -281,20 +240,20 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 4. Featured Products Section */}
-      <section className="products-section section-padding" id="featured">
+      <ScrollAnimate className="products-section section-padding" id="featured">
         <div className="section-header-title">
           <h2>Featured Products</h2>
           <p>Explore today's trending premium recommendations</p>
         </div>
 
-        <div className="products-grid">
+        <StaggerContainer className="products-grid">
           {productsList.map(product => {
             const isWishlisted = wishlist.some(item => item.id === product.id);
             return (
-              <div key={product.id} className="product-card">
+              <StaggerItem key={product.id} className="product-card" scaleOnHover={true}>
                 {/* Image and badges */}
                 <div className="product-image-box">
                   <Link to={`/product/${product.id}`}>
@@ -303,13 +262,15 @@ const Home = () => {
                   <div className="product-badges">
                     <span className="discount-badge">-{product.discount}%</span>
                   </div>
-                  <button 
-                    onClick={() => toggleWishlist(product)}
-                    className={`wishlist-toggle-btn ${isWishlisted ? 'active' : ''}`}
-                    aria-label="Add to Wishlist"
-                  >
-                    <Heart size={16} fill={isWishlisted ? '#f43f5e' : 'none'} />
-                  </button>
+                  {!isAdmin && (
+                    <button 
+                      onClick={() => toggleWishlist(product)}
+                      className={`wishlist-toggle-btn ${isWishlisted ? 'active' : ''}`}
+                      aria-label="Add to Wishlist"
+                    >
+                      <Heart size={16} fill={isWishlisted ? '#f43f5e' : 'none'} />
+                    </button>
+                  )}
                 </div>
 
                 {/* Details */}
@@ -333,23 +294,29 @@ const Home = () => {
                       <span className="current-price">₹{(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
                       <span className="old-price">₹{product.price.toFixed(2)}</span>
                     </div>
-                    <button 
-                      onClick={() => addToCart(product)}
-                      className="add-to-cart-btn"
-                      aria-label="Add product to Cart"
-                    >
-                      <ShoppingCart size={16} />
-                    </button>
+                    {isAdmin ? (
+                      <span className="admin-view-badge" style={{ fontSize: '11px', padding: '3px 6px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.1)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.2)', fontWeight: 'bold' }}>
+                        Monitoring
+                      </span>
+                    ) : (
+                      <button 
+                        onClick={() => addToCart(product)}
+                        className="add-to-cart-btn"
+                        aria-label="Add product to Cart"
+                      >
+                        <ShoppingCart size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
+              </StaggerItem>
             );
           })}
-        </div>
-      </section>
+        </StaggerContainer>
+      </ScrollAnimate>
 
       {/* 5. Why Choose High Mart Section */}
-      <section className="benefits-section section-padding">
+      <ScrollAnimate className="benefits-section section-padding">
         <div className="section-header-title">
           <h2>Why Customers Shop with Us</h2>
           <p>Unmatched convenience, security, and quality guarantees</p>
@@ -359,7 +326,7 @@ const Home = () => {
           {/* Card 1: Delivery */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <Truck size={24} />
+              <img src="/assets/3d_icons/truck.png" alt="2h Delivery" className="benefit-3d-icon" />
             </div>
             <h3>Superfast 2h Delivery</h3>
             <p>Free priority dispatch on orders above ₹500. Delivered directly to your room safely.</p>
@@ -368,7 +335,7 @@ const Home = () => {
           {/* Card 2: Security */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <ShieldCheck size={24} />
+              <img src="/assets/3d_icons/shield.png" alt="Secure Payments" className="benefit-3d-icon" />
             </div>
             <h3>100% Secure Payments</h3>
             <p>We accept Visa, Mastercard, Google Pay, PayPal, and encrypt all payment processing layers.</p>
@@ -377,7 +344,7 @@ const Home = () => {
           {/* Card 3: Returns */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <RotateCcw size={24} />
+              <img src="/assets/3d_icons/returns.png" alt="30-Day Returns" className="benefit-3d-icon" />
             </div>
             <h3>Easy 30-Day Returns</h3>
             <p>Not satisfied? Print a return invoice slip and drop off packages for instant credit returns.</p>
@@ -386,16 +353,16 @@ const Home = () => {
           {/* Card 4: Support */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <Headphones size={24} />
+              <img src="/assets/3d_icons/support.png" alt="24/7 Support" className="benefit-3d-icon" />
             </div>
             <h3>24/7 Dedicated Support</h3>
             <p>Reach customer care via live ticket channels, email inbox, or toll-free hotlines anytime.</p>
           </div>
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 6. Customer Reviews Carousel Section */}
-      <section className="reviews-section section-padding" id="reviews">
+      <ScrollAnimate className="reviews-section section-padding" id="reviews">
         <div className="section-header-title">
           <h2>What Shoppers Say</h2>
           <p>Read honest feedback from verified buyers across the globe</p>
@@ -432,10 +399,10 @@ const Home = () => {
             <ChevronRight size={20} />
           </button>
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 7. Newsletter Section */}
-      <section className="newsletter-section section-padding">
+      <ScrollAnimate className="newsletter-section section-padding">
         <div className="newsletter-card glass-effect">
           <div className="newsletter-icon-box">
             <Mail size={32} />
@@ -453,7 +420,7 @@ const Home = () => {
             <button type="submit">Subscribe</button>
           </form>
         </div>
-      </section>
+      </ScrollAnimate>
     </div>
   );
 };

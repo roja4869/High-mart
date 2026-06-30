@@ -331,3 +331,62 @@
   0% { opacity: 0; transform: translateY(8px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+
+/* Flipkart-style quantity selector */
+.product-qty-selector {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #2563eb;
+  border-radius: 99px;
+  overflow: hidden;
+  background: #ffffff;
+  height: 38px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  transition: all 0.2s ease;
+}
+
+:global(.dark-theme) .product-qty-selector {
+  border-color: #3b82f6;
+  background: #1e293b;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.qty-adjust-btn {
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 1.25rem;
+  font-weight: 700;
+  width: 34px;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+:global(.dark-theme) .qty-adjust-btn {
+  color: #3b82f6;
+}
+
+.qty-adjust-btn:hover {
+  background-color: rgba(37, 99, 235, 0.08);
+}
+
+:global(.dark-theme) .qty-adjust-btn:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+
+.qty-display {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+  min-width: 20px;
+  text-align: center;
+  user-select: none;
+}
+
+:global(.dark-theme) .qty-display {
+  color: #f8fafc;
+}

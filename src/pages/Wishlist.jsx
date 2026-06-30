@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AppContext } from '../App';
-import { MOCK_PRODUCTS } from '../services/productService';
+import { authService } from '../services/authService';
+import { wishlistService } from '../services/wishlistService';
+
 
 // Sub-components
 import WishlistCard from '../components/WishlistCard';
@@ -14,7 +16,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import '../styles/Wishlist.css';
 
 const Wishlist = () => {
-  const { wishlist, setWishlist, addToCart, addToast } = useContext(AppContext);
+  const { wishlist, setWishlist, toggleWishlist, addToCart, addToast } = useContext(AppContext);
 
   // Animation state for items being removed
   const [removingIds, setRemovingIds] = useState([]);
@@ -26,20 +28,7 @@ const Wishlist = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
 
-  // Prepopulate wishlist if empty on initial visit
-  useEffect(() => {
-    const isInitialized = localStorage.getItem('highMartWishlistInitialized');
-    if (!isInitialized && wishlist.length === 0) {
-      // Pick 3 items: smart tracker (id 3), ceramic cookware (id 6), canvas backpack (id 8)
-      const initialIds = [3, 6, 8];
-      const initialItems = MOCK_PRODUCTS.filter(p => initialIds.includes(p.id)).map(p => ({
-        ...p,
-        image: p.image || (p.images && p.images[0])
-      }));
-      setWishlist(initialItems);
-      localStorage.setItem('highMartWishlistInitialized', 'true');
-    }
-  }, [wishlist, setWishlist]);
+
 
   // Actions
   const handleMoveToCart = (product) => {
@@ -48,8 +37,8 @@ const Wishlist = () => {
 
     // Animate item exit from wishlist grid
     setRemovingIds(prev => [...prev, product.id]);
-    setTimeout(() => {
-      setWishlist(prev => prev.filter(item => item.id !== product.id));
+    setTimeout(async () => {
+      await toggleWishlist(product);
       setRemovingIds(prev => prev.filter(id => id !== product.id));
     }, 300);
   };
@@ -67,10 +56,9 @@ const Wishlist = () => {
     
     // Animate item exit
     setRemovingIds(prev => [...prev, targetProduct.id]);
-    setTimeout(() => {
-      setWishlist(prev => prev.filter(item => item.id !== targetProduct.id));
+    setTimeout(async () => {
+      await toggleWishlist(targetProduct);
       setRemovingIds(prev => prev.filter(id => id !== targetProduct.id));
-      addToast(`"${targetProduct.name}" removed from wishlist.`, 'info');
       setProductToDelete(null);
     }, 300);
   };
@@ -87,17 +75,22 @@ const Wishlist = () => {
     const allIds = wishlist.map(item => item.id);
     setRemovingIds(allIds);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       // Add all to cart
       wishlist.forEach(item => {
-        // Add item to cart (we bypass multiple toasts by adding silent cart actions,
-        // or just let it stack - since addToCart uses addToast, let's show a single summary toast instead
-        // by customizing if needed, but since addToCart has a built-in toast, it will show them.
-        // To make it look extremely premium, we can display a single summary toast)
         addToCart(item);
       });
       
-      // Clear wishlist
+      // Clear from database if logged in
+      if (authService.isAuthenticated()) {
+        try {
+          await Promise.all(wishlist.map(item => wishlistService.removeFromWishlist(item.id)));
+        } catch (e) {
+          console.error("Failed to clear database wishlist:", e.message);
+        }
+      }
+
+      // Clear wishlist in state
       setWishlist([]);
       setRemovingIds([]);
       addToast(`Moved all items to your shopping cart!`, 'success');

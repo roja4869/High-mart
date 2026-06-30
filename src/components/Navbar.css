@@ -19,9 +19,9 @@
 
 /* Dark Mode Override Support */
 :global(.dark-theme) .navbar-container {
-  background: rgba(15, 23, 42, 0.75);
-  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+  background: rgba(19, 25, 33, 0.85); /* Amazon Squid Ink background */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
 }
 
 .navbar-content {
@@ -57,14 +57,14 @@
 }
 
 .logo-icon-wrapper {
-  background: #2563eb;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); /* Hybrid Gradient */
   color: #ffffff;
   padding: 8px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  box-shadow: var(--shadow-3d);
 }
 
 /* Center Search Bar Styling */
@@ -94,15 +94,15 @@
 }
 
 .navbar-search-input:focus {
-  border-color: rgba(37, 99, 235, 0.4);
+  border-color: var(--secondary-color); /* Amazon orange glow */
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 4px rgba(255, 153, 0, 0.15);
 }
 
 :global(.dark-theme) .navbar-search-input:focus {
-  background: #1e293b;
-  border-color: rgba(6, 182, 212, 0.4);
-  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.12);
+  background: rgba(35, 47, 62, 0.9);
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 4px rgba(255, 153, 0, 0.25);
 }
 
 .navbar-search-icon {
@@ -157,12 +157,12 @@
 }
 
 .nav-link-btn.active-link {
-  color: #4f46e5;
+  color: var(--primary-color);
   font-weight: 700;
 }
 
 :global(.dark-theme) .nav-link-btn.active-link {
-  color: #06b6d4;
+  color: var(--primary-color);
 }
 
 .nav-link-btn.active-link::after {
@@ -172,7 +172,7 @@
   left: 0;
   width: 100%;
   height: 3px;
-  background: #f59e0b; /* Orange/Gold accent line */
+  background: var(--secondary-color); /* Amazon Orange accent line */
   border-radius: 99px;
 }
 
@@ -186,9 +186,9 @@
 
 /* Theme Toggle Glowing Icon */
 .theme-toggle-btn-glow {
-  background: rgba(245, 158, 11, 0.12);
+  background: rgba(255, 153, 0, 0.12);
   border: none;
-  color: #d97706;
+  color: var(--secondary-color);
   cursor: pointer;
   width: 38px;
   height: 38px;
@@ -197,18 +197,18 @@
   align-items: center;
   justify-content: center;
   transition: all 0.25s ease;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
+  box-shadow: 0 0 12px rgba(255, 153, 0, 0.15);
 }
 
 :global(.dark-theme) .theme-toggle-btn-glow {
-  background: rgba(251, 191, 36, 0.2);
-  color: #fbbf24;
-  box-shadow: 0 0 16px rgba(251, 191, 36, 0.3);
+  background: rgba(255, 153, 0, 0.2);
+  color: var(--secondary-color);
+  box-shadow: 0 0 16px rgba(255, 153, 0, 0.3);
 }
 
 .theme-toggle-btn-glow:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 16px rgba(255, 153, 0, 0.3);
 }
 
 /* Wishlist and Cart Icons styling */
@@ -235,14 +235,14 @@
 .wishlist-icon-wrapper:hover,
 .cart-icon-wrapper-new:hover {
   background: rgba(0, 0, 0, 0.05);
-  color: #000000;
+  color: var(--primary-color);
   transform: translateY(-1px);
 }
 
 :global(.dark-theme) .wishlist-icon-wrapper:hover,
 :global(.dark-theme) .cart-icon-wrapper-new:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  color: var(--primary-color);
 }
 
 .wishlist-badge-count,
@@ -250,7 +250,7 @@
   position: absolute;
   top: -2px;
   right: -2px;
-  background: #ef4444;
+  background: var(--primary-color); /* Myntra Pink */
   color: #ffffff;
   font-size: 0.7rem;
   font-weight: 750;
@@ -266,7 +266,7 @@
 
 :global(.dark-theme) .wishlist-badge-count,
 :global(.dark-theme) .cart-badge-count-new {
-  border-color: #0f172a;
+  border-color: #131921;
 }
 
 /* Profile Badge styling */
@@ -276,7 +276,7 @@
   gap: 8px;
   padding: 4px 12px 4px 4px;
   border-radius: 99px;
-  background: rgba(37, 99, 235, 0.06);
+  background: rgba(255, 63, 108, 0.06);
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
@@ -287,7 +287,7 @@
 }
 
 .navbar-profile-pill:hover {
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(255, 63, 108, 0.12);
 }
 
 :global(.dark-theme) .navbar-profile-pill:hover {
@@ -298,7 +298,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #0088ff;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -428,7 +428,7 @@
 
 .mobile-drawer-links a:hover,
 .mobile-nav-btn:hover {
-  color: #2563eb;
+  color: var(--primary-color);
 }
 
 .mobile-cart-link {
@@ -438,7 +438,7 @@
 }
 
 .mobile-cart-badge {
-  background: #2563eb;
+  background: var(--primary-color);
   color: #ffffff;
   font-size: 0.8rem;
   font-weight: 700;
