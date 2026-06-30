@@ -112,7 +112,6 @@ const Login = () => {
       const emailVal = roleType === 'admin' ? 'admin@example.com' : 'jane@example.com';
       const passVal = roleType === 'admin' ? 'admin123' : 'password123';
       const data = await authService.login(emailVal, passVal);
-      const from = location.state?.from?.pathname || '/dashboard';
       setCurrentUser(data.user);
       addToast(data.message || 'Quick login successful!', 'success');
       

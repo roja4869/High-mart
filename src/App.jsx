@@ -115,11 +115,8 @@ const App = () => {
   }, []);
   const logout = () => {
     authService.logout();
-    sessionStorage.clear();
     setCurrentUser(null);
     setWishlist([]);
-    clearCart();
-    addToast('Logged out successfully.', 'success');
   };
 
   const updateCartQuantity = updateQuantity;
