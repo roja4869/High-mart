@@ -5,7 +5,6 @@ import { authService } from '../services/authService';
 import { productService } from '../services/productService';
 import { categoryService } from '../services/categoryService';
 import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy, ShoppingBag } from 'lucide-react';
-import { ScrollAnimate, StaggerContainer, StaggerItem } from '../components/ScrollAnimate';
 import './Home.css';
 
 // Meta mapping for category icons and styles to preserve premium aesthetic
@@ -181,23 +180,23 @@ const Home = () => {
           <p>Explore our wide range of premium curated collections</p>
         </div>
 
-        <StaggerContainer className="categories-grid">
+        <div className="categories-grid">
           {categories.map((cat) => {
             const meta = getCategoryMeta(cat.name);
             const count = productsList.filter(p => p.category === cat.name).length;
 
             return (
-              <StaggerItem key={cat.id} className="category-card" scaleOnHover={true} onClick={() => handleCategoryScroll(cat.name)}>
+              <div key={cat.id} className="category-card" onClick={() => handleCategoryScroll(cat.name)}>
                 <div className={`category-icon-box ${meta.grad}`}>
                   <img src={meta.img} alt={cat.name} className="category-3d-icon" />
                 </div>
                 <h3>{cat.name}</h3>
                 <span className="category-count">{count > 0 ? `${count}+ Products` : 'No Products'}</span>
-              </StaggerItem>
+              </div>
             );
           })}
-        </StaggerContainer>
-      </ScrollAnimate>
+        </div>
+      </section>
 
       {/* 3. Special Offers Section (Flash Sale & Banners) */}
       <ScrollAnimate className="offers-section section-padding" id="deals">
