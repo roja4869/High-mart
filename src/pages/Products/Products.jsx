@@ -6,6 +6,7 @@ import ProductPreviewModal from '../../components/ProductPreviewModal';
 import { SlidersHorizontal, Sparkles } from 'lucide-react';
 import { AppContext } from '../../App';
 import { CartContext } from '../../context/CartContext';
+import { ScrollAnimate, StaggerContainer } from '../../components/ScrollAnimate';
 import './Products.css';
 
 const CATEGORY_IDS = {
@@ -317,7 +318,7 @@ const Products = () => {
         />
 
         {/* Right Column: Catalog Grid */}
-        <section className="catalog-grid-section">
+        <ScrollAnimate className="catalog-grid-section">
           {activeNavbarTab === 'deals' && (
             <div className="special-filter-alert glass-effect animate-fade-in">
               <Sparkles size={16} className="alert-spark-icon" />
@@ -389,7 +390,7 @@ const Products = () => {
             </div>
           ) : (
             <>
-              <div className="products-grid-layout">
+              <StaggerContainer className="products-grid-layout">
                 {paginatedProducts.map(product => (
                   <ProductCard 
                     key={product.id} 
@@ -397,7 +398,7 @@ const Products = () => {
                     onPreview={handlePreviewProduct}
                   />
                 ))}
-              </div>
+              </StaggerContainer>
 
               {/* Load More Pagination */}
               {remainingCount > 0 && (
@@ -409,7 +410,7 @@ const Products = () => {
               )}
             </>
           )}
-        </section>
+        </ScrollAnimate>
       </div>
 
       {/* Quick View Product Preview Modal */}

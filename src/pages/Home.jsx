@@ -149,7 +149,7 @@ const Home = () => {
   return (
     <div className="home-page-container">
       {/* 1. Hero Section */}
-      <section className="hero-section">
+      <ScrollAnimate className="hero-section">
         {/* Floating background elements */}
         <div className="hero-floating-icons">
           <ShoppingCart className="hero-float icon-f1" size={24} />
@@ -171,10 +171,10 @@ const Home = () => {
             <img src="/assets/hero_banner_3d.png" alt="High Mart Hero Shopping" className="hero-illustration-img" />
           </div>
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 2. Categories Section */}
-      <section className="categories-section section-padding" id="categories">
+      <ScrollAnimate className="categories-section section-padding" id="categories">
         <div className="section-header-title">
           <h2>Shop by Category</h2>
           <p>Explore our wide range of premium curated collections</p>
@@ -199,7 +199,7 @@ const Home = () => {
       </section>
 
       {/* 3. Special Offers Section (Flash Sale & Banners) */}
-      <section className="offers-section section-padding" id="deals">
+      <ScrollAnimate className="offers-section section-padding" id="deals">
         <div className="offers-container">
           {/* Flash Sale Left Banner */}
           <div className="flash-sale-banner">
@@ -239,20 +239,20 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 4. Featured Products Section */}
-      <section className="products-section section-padding" id="featured">
+      <ScrollAnimate className="products-section section-padding" id="featured">
         <div className="section-header-title">
           <h2>Featured Products</h2>
           <p>Explore today's trending premium recommendations</p>
         </div>
 
-        <div className="products-grid">
+        <StaggerContainer className="products-grid">
           {productsList.map(product => {
             const isWishlisted = wishlist.some(item => item.id === product.id);
             return (
-              <div key={product.id} className="product-card">
+              <StaggerItem key={product.id} className="product-card" scaleOnHover={true}>
                 {/* Image and badges */}
                 <div className="product-image-box">
                   <Link to={`/product/${product.id}`}>
@@ -308,14 +308,14 @@ const Home = () => {
                     )}
                   </div>
                 </div>
-              </div>
+              </StaggerItem>
             );
           })}
-        </div>
-      </section>
+        </StaggerContainer>
+      </ScrollAnimate>
 
       {/* 5. Why Choose High Mart Section */}
-      <section className="benefits-section section-padding">
+      <ScrollAnimate className="benefits-section section-padding">
         <div className="section-header-title">
           <h2>Why Customers Shop with Us</h2>
           <p>Unmatched convenience, security, and quality guarantees</p>
@@ -358,10 +358,10 @@ const Home = () => {
             <p>Reach customer care via live ticket channels, email inbox, or toll-free hotlines anytime.</p>
           </div>
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 6. Customer Reviews Carousel Section */}
-      <section className="reviews-section section-padding" id="reviews">
+      <ScrollAnimate className="reviews-section section-padding" id="reviews">
         <div className="section-header-title">
           <h2>What Shoppers Say</h2>
           <p>Read honest feedback from verified buyers across the globe</p>
@@ -398,10 +398,10 @@ const Home = () => {
             <ChevronRight size={20} />
           </button>
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 7. Newsletter Section */}
-      <section className="newsletter-section section-padding">
+      <ScrollAnimate className="newsletter-section section-padding">
         <div className="newsletter-card glass-effect">
           <div className="newsletter-icon-box">
             <Mail size={32} />
@@ -419,7 +419,7 @@ const Home = () => {
             <button type="submit">Subscribe</button>
           </form>
         </div>
-      </section>
+      </ScrollAnimate>
     </div>
   );
 };
