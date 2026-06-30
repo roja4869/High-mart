@@ -66,5 +66,33 @@ export const authService = {
   // Authentication check
   isAuthenticated() {
     return !!localStorage.getItem('highMartToken');
+  },
+
+  // Update profile method
+  async updateProfile(profileData) {
+    try {
+      const response = await api.put('/auth/profile', profileData);
+      if (response.data.success && response.data.user) {
+        localStorage.setItem('highMartUser', JSON.stringify(response.data.user));
+      }
+      return response.data;
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      throw new Error(errorMsg);
+    }
+  },
+
+  // Fetch profile from backend
+  async fetchProfile() {
+    try {
+      const response = await api.get('/auth/profile');
+      if (response.data.success && response.data.user) {
+        localStorage.setItem('highMartUser', JSON.stringify(response.data.user));
+      }
+      return response.data;
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      throw new Error(errorMsg);
+    }
   }
 };

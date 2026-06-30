@@ -80,7 +80,7 @@ export const login = async (req, res, next) => {
 
     // Find user
     const result = await db.execute({
-      sql: "SELECT id, name, email, phone, password, role FROM users WHERE email = ?",
+      sql: "SELECT id, name, email, phone, password, role, gender, dob, bio, avatar FROM users WHERE email = ?",
       args: [email.toLowerCase()]
     });
 
@@ -115,6 +115,71 @@ export const getProfile = async (req, res, next) => {
     res.json({
       success: true,
       user: req.user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update user profile
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+export const updateProfile = async (req, res, next) => {
+  try {
+    const id = req.user.id;
+
+    // Get current user details from DB
+    const checkResult = await db.execute({
+      sql: "SELECT id, name, email, phone, gender, dob, bio, avatar FROM users WHERE id = ?",
+      args: [id]
+    });
+
+    const currentUser = checkResult.rows[0];
+    if (!currentUser) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    const { name, email, phone, gender, dob, bio, avatar } = req.body;
+
+    const updatedName = name !== undefined ? name.trim() : currentUser.name;
+    const updatedEmail = email !== undefined ? email.toLowerCase().trim() : currentUser.email;
+    const updatedPhone = phone !== undefined ? phone.trim() : currentUser.phone;
+    const updatedGender = gender !== undefined ? gender : currentUser.gender;
+    const updatedDob = dob !== undefined ? dob : currentUser.dob;
+    const updatedBio = bio !== undefined ? bio : currentUser.bio;
+    const updatedAvatar = avatar !== undefined ? avatar : currentUser.avatar;
+
+    // If email is being changed, check if new email already exists
+    if (updatedEmail !== currentUser.email) {
+      const emailCheck = await db.execute({
+        sql: "SELECT id FROM users WHERE email = ?",
+        args: [updatedEmail]
+      });
+      if (emailCheck.rows.length > 0) {
+        res.status(400);
+        throw new Error('Email address is already in use by another account');
+      }
+    }
+
+    // Update user in DB
+    await db.execute({
+      sql: "UPDATE users SET name = ?, email = ?, phone = ?, gender = ?, dob = ?, bio = ?, avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      args: [updatedName, updatedEmail, updatedPhone, updatedGender, updatedDob, updatedBio, updatedAvatar, id]
+    });
+
+    // Fetch updated user to return
+    const finalResult = await db.execute({
+      sql: "SELECT id, name, email, phone, role, gender, dob, bio, avatar, created_at FROM users WHERE id = ?",
+      args: [id]
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: finalResult.rows[0]
     });
   } catch (error) {
     next(error);

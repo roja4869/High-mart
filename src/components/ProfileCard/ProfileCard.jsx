@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Edit3, Save, X, User, Mail, Phone, Calendar, ShieldAlert, Award } from 'lucide-react';
 import defaultAvatar from '../../assets/profile-avatar.png';
+import { authService } from '../../services/authService';
 
 const ProfileCard = ({ user, onUpdateUser, addToast }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -49,14 +50,18 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatar(reader.result);
-        if (user) {
-          const updatedUser = { ...user, avatar: reader.result };
-          localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
-          onUpdateUser(updatedUser);
+      reader.onloadend = async () => {
+        const base64Avatar = reader.result;
+        try {
+          const res = await authService.updateProfile({ avatar: base64Avatar });
+          if (res.success) {
+            setAvatar(base64Avatar);
+            onUpdateUser(res.user);
+            addToast('Profile picture updated successfully!', 'success');
+          }
+        } catch (err) {
+          addToast(err.message || 'Failed to update profile picture.', 'error');
         }
-        addToast('Profile picture updated successfully!', 'success');
       };
       reader.readAsDataURL(file);
     }
@@ -66,7 +71,7 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
     fileInputRef.current.click();
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       addToast('Name is required.', 'error');
@@ -77,21 +82,24 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
       return;
     }
 
-    const updatedUser = {
-      ...user,
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      gender: formData.gender,
-      dob: formData.dob,
-      bio: formData.bio.trim(),
-      avatar: avatar
-    };
+    try {
+      const res = await authService.updateProfile({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        gender: formData.gender,
+        dob: formData.dob,
+        bio: formData.bio.trim()
+      });
 
-    localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
-    onUpdateUser(updatedUser);
-    setIsEditing(false);
-    addToast('Profile information saved!', 'success');
+      if (res.success) {
+        onUpdateUser(res.user);
+        setIsEditing(false);
+        addToast('Profile information saved successfully!', 'success');
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to save profile information.', 'error');
+    }
   };
 
   return (

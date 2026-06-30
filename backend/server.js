@@ -108,6 +108,22 @@ const initializeTables = async () => {
       // Column already exists, safe to ignore
     }
 
+    // 4.1 Add profile columns to users if they do not exist
+    const userProfileCols = [
+      { name: 'gender', type: 'TEXT' },
+      { name: 'dob', type: 'TEXT' },
+      { name: 'bio', type: 'TEXT' },
+      { name: 'avatar', type: 'TEXT' }
+    ];
+    for (const col of userProfileCols) {
+      try {
+        await db.execute(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+        console.log(`Added column ${col.name} to users table.`);
+      } catch (err) {
+        // Column already exists, ignore
+      }
+    }
+
     // 5. Add user transaction metadata columns to orders if not exists
     const orderCols = [
       { name: 'order_id', type: 'TEXT' },

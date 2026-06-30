@@ -137,24 +137,40 @@ const Profile = () => {
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Simulate skeleton loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const loadProfileAndData = async () => {
+      try {
+        const res = await authService.fetchProfile();
+        if (res.success && res.user) {
+          const user = res.user;
+          // Add mock fields fallback if they don't exist in DB
+          if (!user.gender) user.gender = 'Male';
+          if (!user.dob) user.dob = '1995-08-15';
+          if (!user.bio) user.bio = 'Avid shopper & review contributor';
+          setCurrentUser(user);
+          fetchUserOrders(user.id);
+        } else {
+          navigate('/login');
+        }
+      } catch (err) {
+        console.warn("Failed to fetch user profile from database. Fallback to local storage.", err.message);
+        const user = authService.getCurrentUser();
+        if (user) {
+          if (!user.gender) user.gender = 'Male';
+          if (!user.dob) user.dob = '1995-08-15';
+          if (!user.bio) user.bio = 'Avid shopper & review contributor';
+          setCurrentUser(user);
+          fetchUserOrders(user.id);
+        } else {
+          navigate('/login');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Retrieve current logged in user
-    const user = authService.getCurrentUser();
-    if (user) {
-      // Add mock fields if they don't exist
-      if (!user.gender) user.gender = 'Male';
-      if (!user.dob) user.dob = '1995-08-15';
-      if (!user.bio) user.bio = 'Avid shopper & review contributor';
-      setCurrentUser(user);
-      
-      // Fetch orders from backend database
-      fetchUserOrders(user.id);
+    if (authService.isAuthenticated()) {
+      loadProfileAndData();
     } else {
-      // Safety redirect
       navigate('/login');
     }
 
@@ -163,8 +179,6 @@ const Profile = () => {
     if (savedAddresses) {
       setAddresses(JSON.parse(savedAddresses));
     }
-
-    return () => clearTimeout(timer);
   }, [navigate]);
 
   // Sync address changes when tab changes to dashboard overview
