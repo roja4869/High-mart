@@ -26,6 +26,16 @@ export const protect = async (req, res, next) => {
       }
 
       const user = result.rows[0];
+      
+      // If user is a seller, fetch their verification status from sellers table
+      if (user.role === 'seller') {
+        const sellerCheck = await db.execute({
+          sql: "SELECT status FROM sellers WHERE email = ?",
+          args: [user.email.toLowerCase()]
+        });
+        user.status = sellerCheck.rows[0]?.status || 'Pending';
+      }
+
       req.user = user;
       
       next();
@@ -45,5 +55,18 @@ export const adminOnly = (req, res, next) => {
     next();
   } else {
     res.status(403).json({ error: 'Access denied: Admins only' });
+  }
+};
+
+export const sellerDashboardAccess = (req, res, next) => {
+  if (req.user) {
+    if (req.user.role === 'seller' && req.user.status !== 'Approved') {
+      return res.status(403).json({
+        message: "Seller account is pending approval."
+      });
+    }
+    next();
+  } else {
+    res.status(401).json({ error: 'Not authorized, login required' });
   }
 };

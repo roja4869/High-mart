@@ -11,6 +11,8 @@ import Products from '../pages/Products/Products';
 import ProductDetail from '../pages/ProductDetail';
 import Cart from '../pages/Cart';
 import Wishlist from '../pages/Wishlist';
+import SellerRegister from '../pages/seller/SellerRegister';
+import SellerDashboard from '../pages/seller/SellerDashboard';
 import { authService } from '../services/authService';
 
 // Guard for protected routes (e.g. Dashboard)
@@ -22,6 +24,9 @@ const ProtectedRoute = ({ children }) => {
   const currentUser = authService.getCurrentUser();
   if (currentUser?.role === 'admin') {
     return <Navigate to="/admin" replace />;
+  }
+  if (currentUser?.role === 'seller' && location.pathname === '/dashboard') {
+    return <Navigate to="/seller/dashboard" replace />;
   }
   return children;
 };
@@ -43,6 +48,14 @@ const AdminRoute = ({ children }) => {
   return isAuth && isAdmin ? children : <Navigate to="/dashboard" replace />;
 };
 
+// Guard for seller-only routes (e.g. Seller Dashboard)
+const SellerRoute = ({ children }) => {
+  const isAuth = authService.isAuthenticated();
+  const currentUser = authService.getCurrentUser();
+  const isSeller = currentUser?.role === 'seller';
+  return isAuth && isSeller ? children : <Navigate to="/login" replace />;
+};
+
 // Guard for public-only auth routes (e.g. Login, Register)
 const PublicRoute = ({ children }) => {
   const isAuth = authService.isAuthenticated();
@@ -62,6 +75,7 @@ const AppRoutes = () => {
       <Route path="/products" element={<Products />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/cart" element={<CustomerRoute><Cart /></CustomerRoute>} />
+      <Route path="/seller/register" element={<SellerRegister />} />
       <Route path="/wishlist" element={<CustomerRoute><Wishlist /></CustomerRoute>} />
 
       {/* Guest-only Auth Pages */}
@@ -92,6 +106,14 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/seller/dashboard" 
+        element={
+          <SellerRoute>
+            <SellerDashboard />
+          </SellerRoute>
+        } 
+      />
+      <Route 
         path="/profile" 
         element={
           <ProtectedRoute>
@@ -116,9 +138,16 @@ const AppRoutes = () => {
         } 
       />
 
-      {/* Admin-only Protected Pages */}
       <Route 
         path="/admin" 
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/seller-requests" 
         element={
           <AdminRoute>
             <AdminDashboard />

@@ -1275,3 +1275,44 @@
   background: var(--secondary-color);
   color: #fff;
 }
+
+/* Seller approval system custom styles */
+.action-circle-btn.approve {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.action-circle-btn.approve:hover {
+  background: #10b981;
+  color: #fff;
+}
+
+.dialog-form-select {
+  padding: 10px 14px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--text-dark);
+  font-size: 0.85rem;
+  font-family: var(--font-main);
+  outline: none;
+  transition: var(--transition-smooth);
+}
+
+.dark-theme .dialog-form-select {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+@media (max-width: 768px) {
+  .responsive-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .responsive-modal-grid > div {
+    grid-column: span 1 !important;
+  }
+  .responsive-doc-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+}

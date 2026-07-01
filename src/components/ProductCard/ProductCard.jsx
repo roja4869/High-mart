@@ -142,7 +142,7 @@ const ProductCard = ({ product, onPreview }) => {
                 addToCart(product);
               }} 
               className="product-add-cart-circle-btn"
-              aria-label={`Add ${product.name} to shopping cart`}
+              aria-label={"Add " + product.name + " to shopping cart"}
             >
               <ShoppingCart size={18} />
             </button>
