@@ -108,38 +108,18 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
         bio: formData.bio.trim()
       });
 
-    const saveProfileBackend = async () => {
-      try {
-        const token = localStorage.getItem('highMartToken');
-        if (token) {
-          const response = await axios.put('/api/auth/profile', updatedUser, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          if (response.data && response.data.success) {
-            const savedUser = response.data.user;
-            localStorage.setItem('highMartUser', JSON.stringify(savedUser));
-            onUpdateUser(savedUser);
-            setIsEditing(false);
-            addToast('Profile details saved to database!', 'success');
-            return;
-          }
-        }
-        localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
-        onUpdateUser(updatedUser);
+      if (res && res.success) {
+        localStorage.setItem('highMartUser', JSON.stringify(res.user));
+        onUpdateUser(res.user);
         setIsEditing(false);
-        addToast('Profile saved locally.', 'success');
-      } catch (err) {
-        console.warn("Failed to update profile in DB:", err.message);
-        localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
-        onUpdateUser(updatedUser);
-        setIsEditing(false);
-        addToast('Profile details saved locally (DB connection error).', 'warning');
+        addToast('Profile details saved to database!', 'success');
+      } else {
+        addToast(res?.message || 'Profile update failed.', 'error');
       }
-    };
-
-    saveProfileBackend();
+    } catch (err) {
+      console.error("Failed to update profile:", err.message);
+      addToast(err.response?.data?.error || err.message || 'Profile details save error.', 'error');
+    }
   };
 
   return (
