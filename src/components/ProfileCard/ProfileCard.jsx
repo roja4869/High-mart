@@ -107,25 +107,17 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
         dob: formData.dob,
         bio: formData.bio.trim()
       });
-
       if (res && res.success) {
+        localStorage.setItem('highMartUser', JSON.stringify(res.user));
         onUpdateUser(res.user);
         setIsEditing(false);
         addToast('Profile details saved to database!', 'success');
       } else {
-        const updatedUser = { ...user, ...formData };
-        localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
-        onUpdateUser(updatedUser);
-        setIsEditing(false);
-        addToast('Profile saved locally.', 'success');
+        addToast(res?.message || 'Profile update failed.', 'error');
       }
     } catch (err) {
-      console.warn("Failed to update profile in DB:", err.message);
-      const updatedUser = { ...user, ...formData };
-      localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
-      onUpdateUser(updatedUser);
-      setIsEditing(false);
-      addToast('Profile details saved locally (DB connection error).', 'warning');
+      console.error("Failed to update profile:", err.message);
+      addToast(err.response?.data?.error || err.message || 'Profile details save error.', 'error');
     }
   };
 

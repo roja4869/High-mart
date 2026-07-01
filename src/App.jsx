@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes/AppRoutes';
-import Navbar from './components/Navbar';
+import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
 import SupportChatBot from './components/SupportChatBot/SupportChatBot';
 import { CartContext } from './context/CartContext';
