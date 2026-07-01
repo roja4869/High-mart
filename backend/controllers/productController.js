@@ -349,7 +349,7 @@ const enrichProduct = (product, pathMap, rootCategoryMap) => {
 export const getProducts = async (req, res, next) => {
   try {
     console.log("getProducts query parameters:", req.query);
-    const { category, search, category_id, subcategory_id, gender } = req.query;
+    const { category, search, category_id, subcategory_id, gender, seller_id } = req.query;
     
     let sql = `
       SELECT p.*, c.name as category,
@@ -366,6 +366,12 @@ export const getProducts = async (req, res, next) => {
       WHERE 1=1
     `;
     const args = [];
+
+    // Filter by seller ID
+    if (seller_id) {
+      sql += ` AND p.seller_id = ?`;
+      args.push(parseInt(seller_id));
+    }
 
     // Filter by category name
     if (category) {
@@ -626,13 +632,25 @@ export const createProduct = async (req, res, next) => {
       image = getAutoReplaceImage(gender, subCategory, productType || subCategory, image);
     }
 
+    // Fetch seller_id if user is a seller
+    let sellerId = null;
+    if (req.user && req.user.role === 'seller') {
+      const sellerRes = await db.execute({
+        sql: "SELECT id FROM sellers WHERE email = ?",
+        args: [req.user.email.toLowerCase()]
+      });
+      if (sellerRes.rows.length > 0) {
+        sellerId = sellerRes.rows[0].id;
+      }
+    }
+
     // Insert Product
     const insertResult = await db.execute({
       sql: `
-        INSERT INTO products (name, description, price, category_id, subcategory_id, image, images, stock)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+        INSERT INTO products (name, description, price, category_id, subcategory_id, image, images, stock, seller_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
       `,
-      args: [name, description || '', priceNum, categoryId, subcatId, image, JSON.stringify([image]), stockNum]
+      args: [name, description || '', priceNum, categoryId, subcatId, image, JSON.stringify([image]), stockNum, sellerId]
     });
 
     const newProductId = insertResult.rows[0].id;
@@ -691,6 +709,19 @@ export const updateProduct = async (req, res, next) => {
     if (!currentProduct) {
       res.status(404);
       throw new Error(`Product with ID ${req.params.id} not found`);
+    }
+
+    // Ownership check if user is a seller
+    if (req.user && req.user.role === 'seller') {
+      const sellerRes = await db.execute({
+        sql: "SELECT id FROM sellers WHERE email = ?",
+        args: [req.user.email.toLowerCase()]
+      });
+      const sellerId = sellerRes.rows[0]?.id;
+      if (currentProduct.seller_id !== sellerId) {
+        res.status(403);
+        throw new Error('Access denied: You do not own this product');
+      }
     }
 
     const { name, description, price, category, subcategory_id, stock } = req.body;
@@ -863,13 +894,27 @@ export const deleteProduct = async (req, res, next) => {
     const id = parseInt(req.params.id);
 
     const checkResult = await db.execute({
-      sql: "SELECT id FROM products WHERE id = ?",
+      sql: "SELECT id, seller_id FROM products WHERE id = ?",
       args: [id]
     });
 
-    if (checkResult.rows.length === 0) {
+    const currentProduct = checkResult.rows[0];
+    if (!currentProduct) {
       res.status(404);
       throw new Error(`Product with ID ${req.params.id} not found`);
+    }
+
+    // Ownership check if user is a seller
+    if (req.user && req.user.role === 'seller') {
+      const sellerRes = await db.execute({
+        sql: "SELECT id FROM sellers WHERE email = ?",
+        args: [req.user.email.toLowerCase()]
+      });
+      const sellerId = sellerRes.rows[0]?.id;
+      if (currentProduct.seller_id !== sellerId) {
+        res.status(403);
+        throw new Error('Access denied: You do not own this product');
+      }
     }
 
     // Delete Product

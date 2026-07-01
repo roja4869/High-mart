@@ -6,6 +6,7 @@ import ProductPreviewModal from '../../components/ProductPreviewModal';
 import { SlidersHorizontal, Sparkles } from 'lucide-react';
 import { AppContext } from '../../App';
 import { CartContext } from '../../context/CartContext';
+import { motion } from 'framer-motion';
 import './Products.css';
 
 const CATEGORY_IDS = {
@@ -82,6 +83,24 @@ const SUBCATEGORY_IDS = {
   'Fashion > Accessories > Jewellery': 60,
   'Fashion > Accessories > Hair Accessories': 61,
   'Fashion > Accessories > Scarf': 62
+};
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: "easeOut" } 
+  }
+};
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
 };
 
 const Products = () => {
@@ -317,7 +336,13 @@ const Products = () => {
         />
 
         {/* Right Column: Catalog Grid */}
-        <section className="catalog-grid-section">
+        <motion.div
+          variants={sectionVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.15 }}
+          className="catalog-grid-section"
+        >
           {activeNavbarTab === 'deals' && (
             <div className="special-filter-alert glass-effect animate-fade-in">
               <Sparkles size={16} className="alert-spark-icon" />
@@ -389,7 +414,13 @@ const Products = () => {
             </div>
           ) : (
             <>
-              <div className="products-grid-layout">
+              <motion.div 
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.08 }}
+                className="products-grid-layout"
+              >
                 {paginatedProducts.map(product => (
                   <ProductCard 
                     key={product.id} 
@@ -397,7 +428,7 @@ const Products = () => {
                     onPreview={handlePreviewProduct}
                   />
                 ))}
-              </div>
+              </motion.div>
 
               {/* Load More Pagination */}
               {remainingCount > 0 && (
@@ -409,7 +440,7 @@ const Products = () => {
               )}
             </>
           )}
-        </section>
+        </motion.div>
       </div>
 
       {/* Quick View Product Preview Modal */}

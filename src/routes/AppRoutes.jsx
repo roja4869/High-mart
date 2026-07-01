@@ -1,8 +1,9 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Home from '../pages/Home';
 import Dashboard from '../pages/Dashboard';
 import Profile from '../pages/Profile/Profile';
+import Orders from '../pages/Orders/Orders';
 import Login from '../components/Login';
 import Register from '../components/Register';
 import AdminDashboard from '../srinivas/AdminDashboard';
@@ -10,16 +11,22 @@ import Products from '../pages/Products/Products';
 import ProductDetail from '../pages/ProductDetail';
 import Cart from '../pages/Cart';
 import Wishlist from '../pages/Wishlist';
+import SellerRegister from '../pages/seller/SellerRegister';
+import SellerDashboard from '../pages/seller/SellerDashboard';
 import { authService } from '../services/authService';
 
 // Guard for protected routes (e.g. Dashboard)
 const ProtectedRoute = ({ children }) => {
   const isAuth = authService.isAuthenticated();
-  if (!isAuth) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  if (!isAuth) return <Navigate to="/login" replace state={{ from: location }} />;
   
   const currentUser = authService.getCurrentUser();
   if (currentUser?.role === 'admin') {
     return <Navigate to="/admin" replace />;
+  }
+  if (currentUser?.role === 'seller' && location.pathname === '/dashboard') {
+    return <Navigate to="/seller/dashboard" replace />;
   }
   return children;
 };
@@ -41,6 +48,14 @@ const AdminRoute = ({ children }) => {
   return isAuth && isAdmin ? children : <Navigate to="/dashboard" replace />;
 };
 
+// Guard for seller-only routes (e.g. Seller Dashboard)
+const SellerRoute = ({ children }) => {
+  const isAuth = authService.isAuthenticated();
+  const currentUser = authService.getCurrentUser();
+  const isSeller = currentUser?.role === 'seller';
+  return isAuth && isSeller ? children : <Navigate to="/login" replace />;
+};
+
 // Guard for public-only auth routes (e.g. Login, Register)
 const PublicRoute = ({ children }) => {
   const isAuth = authService.isAuthenticated();
@@ -60,6 +75,7 @@ const AppRoutes = () => {
       <Route path="/products" element={<Products />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/cart" element={<CustomerRoute><Cart /></CustomerRoute>} />
+      <Route path="/seller/register" element={<SellerRegister />} />
       <Route path="/wishlist" element={<CustomerRoute><Wishlist /></CustomerRoute>} />
 
       {/* Guest-only Auth Pages */}
@@ -90,6 +106,14 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/seller/dashboard" 
+        element={
+          <SellerRoute>
+            <SellerDashboard />
+          </SellerRoute>
+        } 
+      />
+      <Route 
         path="/profile" 
         element={
           <ProtectedRoute>
@@ -97,10 +121,33 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/orders" 
+        element={
+          <ProtectedRoute>
+            <CustomerRoute><Orders /></CustomerRoute>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/wishlist" 
+        element={
+          <ProtectedRoute>
+            <CustomerRoute><Wishlist /></CustomerRoute>
+          </ProtectedRoute>
+        } 
+      />
 
-      {/* Admin-only Protected Pages */}
       <Route 
         path="/admin" 
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } 
+      />
+      <Route 
+        path="/admin/seller-requests" 
         element={
           <AdminRoute>
             <AdminDashboard />

@@ -5,22 +5,23 @@ import { authService } from '../services/authService';
 import { productService } from '../services/productService';
 import { categoryService } from '../services/categoryService';
 import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy, ShoppingBag } from 'lucide-react';
+import { motion } from 'framer-motion';
 import './Home.css';
 
 // Meta mapping for category icons and styles to preserve premium aesthetic
 const CATEGORY_META = {
-  'Groceries': { icon: Apple, grad: 'cat-grad-1' },
-  'Electronics': { icon: Smartphone, grad: 'cat-grad-2' },
-  'Fashion': { icon: Shirt, grad: 'cat-grad-3' },
-  'Books': { icon: BookOpen, grad: 'cat-grad-4' },
-  'Toys': { icon: ToyBrick, grad: 'cat-grad-5' },
-  'Home & Kitchen': { icon: HomeIcon, grad: 'cat-grad-6' },
-  'Beauty': { icon: Sparkles, grad: 'cat-grad-7' },
-  'Sports': { icon: Trophy, grad: 'cat-grad-8' }
+  'Groceries': { img: '/assets/3d_icons/groceries.png', grad: 'cat-grad-1' },
+  'Electronics': { img: '/assets/3d_icons/electronics.png', grad: 'cat-grad-2' },
+  'Fashion': { img: '/assets/3d_icons/fashion.png', grad: 'cat-grad-3' },
+  'Books': { img: '/assets/3d_icons/books.png', grad: 'cat-grad-4' },
+  'Toys': { img: '/assets/3d_icons/toys.png', grad: 'cat-grad-5' },
+  'Home & Kitchen': { img: '/assets/3d_icons/home_kitchen.png', grad: 'cat-grad-6' },
+  'Beauty': { img: '/assets/3d_icons/beauty.png', grad: 'cat-grad-7' },
+  'Sports': { img: '/assets/3d_icons/sports.png', grad: 'cat-grad-8' }
 };
 
 const getCategoryMeta = (name) => {
-  return CATEGORY_META[name] || { icon: ShoppingBag, grad: 'cat-grad-1' };
+  return CATEGORY_META[name] || { img: '/assets/3d_icons/groceries.png', grad: 'cat-grad-1' };
 };
 
 // Mock Reviews
@@ -30,6 +31,33 @@ const REVIEWS = [
   { id: 3, name: 'Elena Rostova', stars: 4, comment: 'Great customer support! I had to return a cookware set because of sizing, and the refund process was completed in 24 hours without issues.', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&q=80' }
 ];
 
+const sectionVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: "easeOut" } 
+  }
+};
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 25 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.5, ease: "easeOut" } 
+  }
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,7 +65,6 @@ const Home = () => {
   const isAdmin = user?.role === 'admin';
   const [productsList, setProductsList] = useState([]);
   const [categories, setCategories] = useState([]);
-  console.log("[RENDER] Home Component", location);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -91,26 +118,21 @@ const Home = () => {
   // }, [location, navigate]);
 
   // 1. Flash Sale Timer (Hours, Minutes, Seconds)
-  const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 34, seconds: 19 });
+  const [secondsLeft, setSecondsLeft] = useState(4 * 3600 + 34 * 60 + 19);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        } else if (prev.hours > 0) {
-          return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        } else {
-          // Reset to 6 hours when finished
-          return { hours: 6, minutes: 0, seconds: 0 };
-        }
-      });
+      setSecondsLeft(prev => (prev > 0 ? prev - 1 : 6 * 3600));
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
+
+  const timeLeft = {
+    hours: Math.floor(secondsLeft / 3600),
+    minutes: Math.floor((secondsLeft % 3600) / 60),
+    seconds: secondsLeft % 60
+  };
 
   // 2. Reviews Carousel Slider
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
@@ -149,7 +171,13 @@ const Home = () => {
   return (
     <div className="home-page-container">
       {/* 1. Hero Section */}
-      <section className="hero-section">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="hero-section"
+      >
         {/* Floating background elements */}
         <div className="hero-floating-icons">
           <ShoppingCart className="hero-float icon-f1" size={24} />
@@ -168,39 +196,64 @@ const Home = () => {
             </div>
           </div>
           <div className="hero-image-content">
-            <img src="/assets/hero_banner.png" alt="High Mart Hero Shopping" className="hero-illustration-img" />
+            <img src="/assets/hero_banner_3d.png" alt="High Mart Hero Shopping" className="hero-illustration-img" />
           </div>
         </div>
-      </section>
+      </motion.div>
 
       {/* 2. Categories Section */}
-      <section className="categories-section section-padding" id="categories">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="categories-section section-padding"
+        id="categories"
+      >
         <div className="section-header-title">
           <h2>Shop by Category</h2>
           <p>Explore our wide range of premium curated collections</p>
         </div>
 
-        <div className="categories-grid">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          className="categories-grid"
+        >
           {categories.map((cat) => {
             const meta = getCategoryMeta(cat.name);
-            const IconComponent = meta.icon;
             const count = productsList.filter(p => p.category === cat.name).length;
 
             return (
-              <div key={cat.id} className="category-card" onClick={() => handleCategoryScroll(cat.name)}>
-                <div className={`category-icon-box ${meta.grad}`}>
-                  <IconComponent size={28} />
+              <motion.div
+                key={cat.id}
+                variants={cardVariants}
+                whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+                className="category-card"
+                onClick={() => handleCategoryScroll(cat.name)}
+              >
+                <div className={"category-icon-box " + meta.grad}>
+                  <img src={meta.img} alt={cat.name} className="category-3d-icon" />
                 </div>
                 <h3>{cat.name}</h3>
                 <span className="category-count">{count > 0 ? `${count}+ Products` : 'No Products'}</span>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
-      </section>
+        </motion.div>
+      </motion.div>
 
       {/* 3. Special Offers Section (Flash Sale & Banners) */}
-      <section className="offers-section section-padding" id="deals">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="offers-section section-padding"
+        id="deals"
+      >
         <div className="offers-container">
           {/* Flash Sale Left Banner */}
           <div className="flash-sale-banner">
@@ -240,20 +293,38 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </section>
+      </motion.div>
 
       {/* 4. Featured Products Section */}
-      <section className="products-section section-padding" id="featured">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="products-section section-padding"
+        id="featured"
+      >
         <div className="section-header-title">
           <h2>Featured Products</h2>
           <p>Explore today's trending premium recommendations</p>
         </div>
 
-        <div className="products-grid">
-          {productsList.map(product => {
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.08 }}
+          className="products-grid"
+        >
+          {productsList.slice(0, 8).map(product => {
             const isWishlisted = wishlist.some(item => item.id === product.id);
             return (
-              <div key={product.id} className="product-card">
+              <motion.div
+                key={product.id}
+                variants={cardVariants}
+                whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+                className="product-card"
+              >
                 {/* Image and badges */}
                 <div className="product-image-box">
                   <Link to={`/product/${product.id}`}>
@@ -309,14 +380,26 @@ const Home = () => {
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
+        </motion.div>
+        
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
+          <Link to="/products" className="hero-btn-primary" style={{ textDecoration: 'none' }}>
+            View All Products <ArrowRight size={18} />
+          </Link>
         </div>
-      </section>
+      </motion.div>
 
       {/* 5. Why Choose High Mart Section */}
-      <section className="benefits-section section-padding">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="benefits-section section-padding"
+      >
         <div className="section-header-title">
           <h2>Why Customers Shop with Us</h2>
           <p>Unmatched convenience, security, and quality guarantees</p>
@@ -326,7 +409,7 @@ const Home = () => {
           {/* Card 1: Delivery */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <Truck size={24} />
+              <img src="/assets/3d_icons/truck.png" alt="2h Delivery" className="benefit-3d-icon" />
             </div>
             <h3>Superfast 2h Delivery</h3>
             <p>Free priority dispatch on orders above ₹500. Delivered directly to your room safely.</p>
@@ -335,7 +418,7 @@ const Home = () => {
           {/* Card 2: Security */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <ShieldCheck size={24} />
+              <img src="/assets/3d_icons/shield.png" alt="Secure Payments" className="benefit-3d-icon" />
             </div>
             <h3>100% Secure Payments</h3>
             <p>We accept Visa, Mastercard, Google Pay, PayPal, and encrypt all payment processing layers.</p>
@@ -344,7 +427,7 @@ const Home = () => {
           {/* Card 3: Returns */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <RotateCcw size={24} />
+              <img src="/assets/3d_icons/returns.png" alt="30-Day Returns" className="benefit-3d-icon" />
             </div>
             <h3>Easy 30-Day Returns</h3>
             <p>Not satisfied? Print a return invoice slip and drop off packages for instant credit returns.</p>
@@ -353,16 +436,23 @@ const Home = () => {
           {/* Card 4: Support */}
           <div className="benefit-card glass-effect">
             <div className="benefit-icon-wrapper">
-              <Headphones size={24} />
+              <img src="/assets/3d_icons/support.png" alt="24/7 Support" className="benefit-3d-icon" />
             </div>
             <h3>24/7 Dedicated Support</h3>
             <p>Reach customer care via live ticket channels, email inbox, or toll-free hotlines anytime.</p>
           </div>
         </div>
-      </section>
+      </motion.div>
 
       {/* 6. Customer Reviews Carousel Section */}
-      <section className="reviews-section section-padding" id="reviews">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="reviews-section section-padding"
+        id="reviews"
+      >
         <div className="section-header-title">
           <h2>What Shoppers Say</h2>
           <p>Read honest feedback from verified buyers across the globe</p>
@@ -399,10 +489,16 @@ const Home = () => {
             <ChevronRight size={20} />
           </button>
         </div>
-      </section>
+      </motion.div>
 
       {/* 7. Newsletter Section */}
-      <section className="newsletter-section section-padding">
+      <motion.div
+        variants={sectionVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        className="newsletter-section section-padding"
+      >
         <div className="newsletter-card glass-effect">
           <div className="newsletter-icon-box">
             <Mail size={32} />
@@ -420,7 +516,7 @@ const Home = () => {
             <button type="submit">Subscribe</button>
           </form>
         </div>
-      </section>
+      </motion.div>
     </div>
   );
 };

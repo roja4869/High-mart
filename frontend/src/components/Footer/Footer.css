@@ -1,0 +1,189 @@
+.footer-section {
+  background-color: #0f172a; /* Dark Slate background */
+  color: #94a3b8; /* Slate-400 */
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: var(--font-main);
+  padding-top: 70px;
+  position: relative;
+  z-index: 10;
+}
+
+.footer-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 5% 50px 5%;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+  gap: 40px;
+}
+
+.footer-column h3 {
+  color: #f8fafc; /* Slate-50 */
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.footer-column h3::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: var(--primary-color);
+  border-radius: 1px;
+}
+
+/* Brand info column details */
+.brand-summary-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.footer-logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  border-radius: 8px;
+  color: white;
+}
+
+.brand-description {
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.social-icons-wrapper {
+  display: flex;
+  gap: 12px;
+}
+
+.social-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  color: #94a3b8;
+  transition: var(--transition-smooth);
+}
+
+.social-link-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+}
+
+/* Links lists */
+.footer-links-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.footer-links-list li a {
+  color: #94a3b8;
+  transition: var(--transition-smooth);
+}
+
+.footer-links-list li a:hover {
+  color: #f8fafc;
+  padding-left: 4px;
+}
+
+/* Contact information list */
+.footer-contact-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.footer-contact-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.5;
+}
+
+.contact-icon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+/* Copyright Bar */
+.copyright-bar {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 24px 0;
+  font-size: 13.5px;
+}
+
+.copyright-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 5%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.copyright-policies {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.copyright-policies a {
+  color: #94a3b8;
+  transition: var(--transition-smooth);
+}
+
+.copyright-policies a:hover {
+  color: #f8fafc;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .footer-container {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 600px) {
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .copyright-container {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+}

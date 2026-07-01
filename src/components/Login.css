@@ -568,3 +568,43 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
+
+/* Seller Registration Promotion Option */
+.seller-register-promo-divider {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.seller-promo-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.seller-promo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--secondary-color);
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 14px;
+  transition: var(--transition-smooth);
+  cursor: pointer;
+}
+
+.seller-promo-link:hover {
+  color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.store-promo-icon {
+  flex-shrink: 0;
+}

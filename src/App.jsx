@@ -1,8 +1,9 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes/AppRoutes';
-import Navbar from './components/Navbar';
+import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
+import SupportChatBot from './components/SupportChatBot/SupportChatBot';
 import { CartContext } from './context/CartContext';
 import { authService } from './services/authService';
 import { cartService } from './services/cartService';
@@ -54,7 +55,7 @@ class ErrorBoundary extends React.Component {
 
 const App = () => {
   // Consume CartContext values
-  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast, updateQuantity, syncCartWithBackend } = useContext(CartContext);
+  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast, updateQuantity } = useContext(CartContext);
 
   // 1. Theme State
   const [theme, setTheme] = useState(() => {
@@ -111,10 +112,11 @@ const App = () => {
       }
     };
     fetchWishlist();
-  }, [currentUser]);
+  }, []);
   const logout = () => {
     authService.logout();
     setCurrentUser(null);
+    setWishlist([]);
   };
 
   const updateCartQuantity = updateQuantity;
@@ -194,6 +196,7 @@ const App = () => {
     }
   };
 
+
   return (
     <ErrorBoundary>
       <AppContext.Provider value={{
@@ -231,6 +234,7 @@ const App = () => {
               <AppRoutes />
             </main>
             <Footer />
+            <SupportChatBot />
             
             {/* Dynamic Toast Container */}
             <div className="toast-container">

@@ -1,13 +1,14 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
-import { Mail, Lock, Eye, EyeOff, ShoppingBag } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShoppingBag, Store } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
   const { addToast, syncCart, setCurrentUser } = useContext(AppContext);
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Form State
   const [email, setEmail] = useState('');
@@ -79,6 +80,8 @@ const Login = () => {
         localStorage.removeItem('highMartRememberedEmail');
       }
 
+      const from = location.state?.from?.pathname || '/dashboard';
+
       setCurrentUser(data.user);
       addToast(data.message || 'Login successful!', 'success');
       if (syncCart) {
@@ -91,7 +94,7 @@ const Login = () => {
         if (data.user?.role === 'admin') {
           navigate('/admin');
         } else {
-          navigate('/dashboard');
+          navigate(from, { replace: true });
         }
       }, 1000);
     } catch (err) {
@@ -108,7 +111,6 @@ const Login = () => {
     try {
       const emailVal = roleType === 'admin' ? 'admin@example.com' : 'jane@example.com';
       const passVal = roleType === 'admin' ? 'admin123' : 'password123';
-      
       const data = await authService.login(emailVal, passVal);
       setCurrentUser(data.user);
       addToast(data.message || 'Quick login successful!', 'success');
@@ -122,7 +124,7 @@ const Login = () => {
         if (roleType === 'admin') {
           navigate('/admin');
         } else {
-          navigate('/dashboard');
+          navigate(from, { replace: true });
         }
       }, 1000);
     } catch (err) {
@@ -268,6 +270,32 @@ const Login = () => {
                 <span className="btn-txt-label">Sign In</span>
                 <div className="btn-spin-wheel"></div>
               </button>
+
+              {/* Register as Seller Secondary Button */}
+              <button 
+                type="button" 
+                onClick={() => navigate('/seller/register')} 
+                className="seller-register-btn"
+                style={{
+                  marginTop: '12px',
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(79, 70, 229, 0.25)',
+                  background: 'rgba(79, 70, 229, 0.04)',
+                  color: 'var(--primary-color)',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'var(--transition-smooth)'
+                }}
+              >
+                <Store size={16} />
+                <span>Register as Seller</span>
+              </button>
             </form>
 
             <div className="or-auth-divider">
@@ -290,6 +318,7 @@ const Login = () => {
                 </svg>
                 <span>Google</span>
               </button>
+
               <button 
                 type="button" 
                 onClick={() => handleSocialClick('Facebook')} 
@@ -325,6 +354,8 @@ const Login = () => {
                 </button>
               </div>
             </div>
+
+
 
             <div className="login-card-foot">
               <p>Don't have an account? <Link to="/register">Register</Link></p>
