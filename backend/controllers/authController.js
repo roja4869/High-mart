@@ -80,7 +80,7 @@ export const login = async (req, res, next) => {
 
     // Find user
     const result = await db.execute({
-      sql: "SELECT id, name, email, phone, password, role FROM users WHERE email = ?",
+      sql: "SELECT id, name, email, phone, password, role, gender, dob, bio, avatar FROM users WHERE email = ?",
       args: [email.toLowerCase()]
     });
 
@@ -115,6 +115,97 @@ export const getProfile = async (req, res, next) => {
     res.json({
       success: true,
       user: req.user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update user profile
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+export const updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { name, email, phone, avatar, gender, dob, bio } = req.body;
+
+    // Retrieve current user
+    const checkResult = await db.execute({
+      sql: "SELECT id, name, email, phone, role FROM users WHERE id = ?",
+      args: [userId]
+    });
+    
+    if (checkResult.rows.length === 0) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    const currentUser = checkResult.rows[0];
+
+    // Validate email if changed
+    let updatedEmail = currentUser.email;
+    if (email && email.toLowerCase() !== currentUser.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400);
+        throw new Error('Please provide a valid email address');
+      }
+
+      // Check if email already taken
+      const checkEmail = await db.execute({
+        sql: "SELECT id FROM users WHERE email = ? AND id != ?",
+        args: [email.toLowerCase(), userId]
+      });
+      if (checkEmail.rows.length > 0) {
+        res.status(400);
+        throw new Error('Email address already in use');
+      }
+      updatedEmail = email.toLowerCase();
+    }
+
+    const updatedName = name !== undefined ? name : currentUser.name;
+    const updatedPhone = phone !== undefined ? phone : currentUser.phone;
+    const updatedAvatar = avatar !== undefined ? avatar : req.user.avatar;
+    const updatedGender = gender !== undefined ? gender : req.user.gender;
+    const updatedDob = dob !== undefined ? dob : req.user.dob;
+    const updatedBio = bio !== undefined ? bio : req.user.bio;
+
+    // Update table
+    await db.execute({
+      sql: `UPDATE users SET 
+              name = ?, 
+              email = ?, 
+              phone = ?, 
+              avatar = ?, 
+              gender = ?, 
+              dob = ?, 
+              bio = ?, 
+              updated_at = CURRENT_TIMESTAMP 
+            WHERE id = ?`,
+      args: [
+        updatedName, 
+        updatedEmail, 
+        updatedPhone, 
+        updatedAvatar, 
+        updatedGender, 
+        updatedDob, 
+        updatedBio, 
+        userId
+      ]
+    });
+
+    // Fetch updated user
+    const finalResult = await db.execute({
+      sql: "SELECT id, name, email, phone, role, avatar, gender, dob, bio, created_at FROM users WHERE id = ?",
+      args: [userId]
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: finalResult.rows[0]
     });
   } catch (error) {
     next(error);

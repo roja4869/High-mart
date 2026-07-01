@@ -1,0 +1,7 @@
+﻿git : fatal: could not open '/dev/null' for reading and writing: Permission denied
+At line:1 char:1
++ git -C "c:\Users\user\High mart\High-mart" status 2>&1 | Out-File -Fi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (fatal: could no...rmission denied:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

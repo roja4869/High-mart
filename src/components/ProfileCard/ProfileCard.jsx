@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import { Camera, Edit3, Save, X, User, Mail, Phone, Calendar, ShieldAlert, Award } from 'lucide-react';
 import defaultAvatar from '../../assets/profile-avatar.png';
+import { authService } from '../../services/authService';
 
 const ProfileCard = ({ user, onUpdateUser, addToast }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -49,14 +51,33 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         setAvatar(reader.result);
         if (user) {
           const updatedUser = { ...user, avatar: reader.result };
-          localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
-          onUpdateUser(updatedUser);
+          try {
+            const token = localStorage.getItem('highMartToken');
+            if (token) {
+              const res = await axios.put('/api/auth/profile', { avatar: reader.result }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (res.data && res.data.success) {
+                localStorage.setItem('highMartUser', JSON.stringify(res.data.user));
+                onUpdateUser(res.data.user);
+                addToast('Profile picture updated on server!', 'success');
+                return;
+              }
+            }
+            localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
+            onUpdateUser(updatedUser);
+            addToast('Profile picture updated successfully!', 'success');
+          } catch (err) {
+            console.warn("Failed to sync avatar with backend:", err.message);
+            localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
+            onUpdateUser(updatedUser);
+            addToast('Profile picture updated locally.', 'success');
+          }
         }
-        addToast('Profile picture updated successfully!', 'success');
       };
       reader.readAsDataURL(file);
     }
@@ -66,7 +87,7 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
     fileInputRef.current.click();
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       addToast('Name is required.', 'error');
@@ -77,21 +98,48 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
       return;
     }
 
-    const updatedUser = {
-      ...user,
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      gender: formData.gender,
-      dob: formData.dob,
-      bio: formData.bio.trim(),
-      avatar: avatar
+    try {
+      const res = await authService.updateProfile({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        gender: formData.gender,
+        dob: formData.dob,
+        bio: formData.bio.trim()
+      });
+
+    const saveProfileBackend = async () => {
+      try {
+        const token = localStorage.getItem('highMartToken');
+        if (token) {
+          const response = await axios.put('/api/auth/profile', updatedUser, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (response.data && response.data.success) {
+            const savedUser = response.data.user;
+            localStorage.setItem('highMartUser', JSON.stringify(savedUser));
+            onUpdateUser(savedUser);
+            setIsEditing(false);
+            addToast('Profile details saved to database!', 'success');
+            return;
+          }
+        }
+        localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
+        onUpdateUser(updatedUser);
+        setIsEditing(false);
+        addToast('Profile saved locally.', 'success');
+      } catch (err) {
+        console.warn("Failed to update profile in DB:", err.message);
+        localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
+        onUpdateUser(updatedUser);
+        setIsEditing(false);
+        addToast('Profile details saved locally (DB connection error).', 'warning');
+      }
     };
 
-    localStorage.setItem('highMartUser', JSON.stringify(updatedUser));
-    onUpdateUser(updatedUser);
-    setIsEditing(false);
-    addToast('Profile information saved!', 'success');
+    saveProfileBackend();
   };
 
   return (

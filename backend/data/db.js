@@ -21,3 +21,29 @@ export const db = createClient({
 });
 
 console.log("Turso Connected");
+
+// Auto-migrate tables to support custom profile fields
+async function initializeSchema() {
+  try {
+    const tableInfo = await db.execute("PRAGMA table_info(users);");
+    const columns = tableInfo.rows.map(row => row.name);
+    
+    const columnsToAdd = [
+      { name: 'avatar', type: 'TEXT' },
+      { name: 'gender', type: 'TEXT' },
+      { name: 'dob', type: 'TEXT' },
+      { name: 'bio', type: 'TEXT' }
+    ];
+    
+    for (const col of columnsToAdd) {
+      if (!columns.includes(col.name)) {
+        console.log(`Altering table 'users' to add column '${col.name}'...`);
+        await db.execute(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type};`);
+      }
+    }
+  } catch (err) {
+    console.error("Error during database schema checks/alterations:", err);
+  }
+}
+
+initializeSchema();
