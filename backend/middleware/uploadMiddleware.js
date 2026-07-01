@@ -36,3 +36,27 @@ export const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // Max 5MB
   fileFilter
 });
+
+const sellerFileFilter = (req, file, cb) => {
+  const allowedFileTypes = /jpeg|jpg|png|pdf/;
+  const extName = allowedFileTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimeType = allowedFileTypes.test(file.mimetype) || file.mimetype === 'application/pdf';
+
+  if (extName && mimeType) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid document format. Only JPEG, JPG, PNG images and PDF documents are allowed!'));
+  }
+};
+
+export const uploadSellerDocs = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Max 5MB
+  fileFilter: sellerFileFilter
+}).fields([
+  { name: 'gstCertificate', maxCount: 1 },
+  { name: 'panCard', maxCount: 1 },
+  { name: 'cancelledCheque', maxCount: 1 },
+  { name: 'businessLicense', maxCount: 1 },
+  { name: 'profilePhoto', maxCount: 1 }
+]);

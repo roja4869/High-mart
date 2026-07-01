@@ -86,6 +86,55 @@ export const login = async (req, res, next) => {
 
     const user = result.rows[0];
 
+    if (!user) {
+      try {
+        // Check if there is a seller request or approved seller
+        const reqCheck = await db.execute({
+          sql: "SELECT * FROM seller_requests WHERE email = ?",
+          args: [email.toLowerCase()]
+        });
+
+        const sellerCheck = await db.execute({
+          sql: "SELECT * FROM sellers WHERE email = ?",
+          args: [email.toLowerCase()]
+        });
+
+        const matchedRecord = reqCheck.rows[0] || sellerCheck.rows[0];
+
+        if (matchedRecord) {
+          if (await bcrypt.compare(password, matchedRecord.password)) {
+            // Auto-provision user account with role='seller' if missing
+            await db.execute({
+              sql: `INSERT INTO users (name, email, phone, password, role) 
+                    VALUES (?, ?, ?, ?, 'seller')`,
+              args: [
+                matchedRecord.full_name || matchedRecord.fullName || 'Seller Name',
+                matchedRecord.email.toLowerCase(),
+                matchedRecord.phone,
+                matchedRecord.password
+              ]
+            });
+
+            // Fetch the newly created user record
+            const newUserResult = await db.execute({
+              sql: "SELECT id, name, email, phone, role FROM users WHERE email = ?",
+              args: [email.toLowerCase()]
+            });
+            const newUser = newUserResult.rows[0];
+
+            return res.json({
+              success: true,
+              message: 'Login successful',
+              token: generateToken(newUser.id),
+              user: newUser
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Seller check during login failed:", err.message);
+      }
+    }
+
     if (user && (await bcrypt.compare(password, user.password))) {
       const { password: _, ...userWithoutPassword } = user;
       

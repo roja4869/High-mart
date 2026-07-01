@@ -4,11 +4,12 @@ import { adminService } from './adminService';
 import { authService } from '../services/authService';
 import { categoryService } from '../services/categoryService';
 import { AppContext } from '../App';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   BarChart3, Plus, Search, Trash2, Edit3, ShieldAlert, ShoppingBag, 
   Users, DollarSign, Package, ClipboardList, LogOut, ArrowUpRight, 
-  Grid, RefreshCw, AlertTriangle, UserCheck, Eye, ChevronDown, CheckCircle, X
+  Grid, RefreshCw, AlertTriangle, UserCheck, Eye, ChevronDown, CheckCircle, X,
+  Store, Download, CheckCircle2, XCircle
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -17,8 +18,19 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const currentUser = authService.getCurrentUser();
 
+  const location = useLocation();
+
   // Navigation state
-  const [activeTab, setActiveTab] = useState('overview'); // overview, analytics, products, orders, users
+  const [activeTab, setActiveTab] = useState('overview'); // overview, analytics, products, orders, users, sellerRequests
+
+  // Check navigation states
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    } else if (location.pathname === '/admin/seller-requests') {
+      setActiveTab('sellerRequests');
+    }
+  }, [location]);
 
   // API loading states
   const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, totalUsers: 0, lowStockAlerts: 0, awaitingAction: 0 });
@@ -28,6 +40,7 @@ const AdminDashboard = () => {
   const [usersList, setUsersList] = useState([]);
   const [inventoryLogs, setInventoryLogs] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [sellersList, setSellersList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Search & Filter states
@@ -35,6 +48,8 @@ const AdminDashboard = () => {
   const [prodFilter, setProdFilter] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
+  const [sellerSearch, setSellerSearch] = useState('');
+  const [sellerStatusFilter, setSellerStatusFilter] = useState('All');
 
   // Modals state
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -42,6 +57,14 @@ const AdminDashboard = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
+
+  // Seller requests modal states
+  const [viewingSeller, setViewingSeller] = useState(null);
+  const [showSellerDetails, setShowSellerDetails] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('Invalid GST Number');
+  const [customRejectionReason, setCustomRejectionReason] = useState('');
+  const [verifiedDocs, setVerifiedDocs] = useState({});
 
   // Form states for creating products
   const [newProdName, setNewProdName] = useState('');
@@ -100,6 +123,15 @@ const AdminDashboard = () => {
       // 6. Fetch Inventory Logs
       const logsData = await adminService.getInventoryLogs();
       setInventoryLogs(logsData);
+
+      // 7. Fetch Sellers
+      try {
+        const sellerData = await adminService.getSellers();
+        setSellersList(sellerData || []);
+      } catch (err) {
+        console.error('Failed to fetch sellers:', err);
+        setSellersList([]);
+      }
     } catch (error) {
       addToast('Error fetching database records.', 'error');
     } finally {
@@ -276,7 +308,77 @@ const AdminDashboard = () => {
     }
   };
 
+  // ==================== SELLER ACTIONS ====================
+  const handleViewSellerDetails = (seller) => {
+    setViewingSeller(seller);
+    setShowSellerDetails(true);
+  };
+
+  const handleToggleDocVerification = (sellerId, docField, isVerified) => {
+    setVerifiedDocs(prev => ({
+      ...prev,
+      [sellerId]: {
+        ...(prev[sellerId] || {}),
+        [docField]: isVerified
+      }
+    }));
+  };
+
+  const handleApproveSeller = async (id) => {
+    if (window.confirm('Are you sure you want to approve this seller application?')) {
+      try {
+        const response = await adminService.approveSeller(id);
+        addToast(response.message || 'Seller approved successfully!', 'success');
+        setShowSellerDetails(false);
+        fetchAllData();
+      } catch (err) {
+        addToast(err.response?.data?.error || err.message || 'Failed to approve seller.', 'error');
+      }
+    }
+  };
+
+  const handleOpenRejectModal = (seller) => {
+    setViewingSeller(seller);
+    setRejectionReason('Invalid GST Number');
+    setCustomRejectionReason('');
+    setShowRejectModal(true);
+  };
+
+  const handleRejectSellerSubmit = async (e) => {
+    e.preventDefault();
+    const finalReason = rejectionReason === 'Other' ? customRejectionReason : rejectionReason;
+    if (!finalReason.trim()) {
+      addToast('Please provide a rejection reason.', 'error');
+      return;
+    }
+
+    try {
+      const response = await adminService.rejectSeller(viewingSeller.id, finalReason);
+      addToast(response.message || 'Seller application rejected.', 'success');
+      setShowRejectModal(false);
+      setShowSellerDetails(false);
+      fetchAllData();
+    } catch (err) {
+      addToast(err.response?.data?.error || err.message || 'Failed to reject seller.', 'error');
+    }
+  };
+
   // Filter listings
+  const filteredSellers = sellersList.filter(s => {
+    const nameMatch = (s.fullName || '').toLowerCase().includes(sellerSearch.toLowerCase()) || 
+                      (s.businessName || '').toLowerCase().includes(sellerSearch.toLowerCase()) ||
+                      (s.email || '').toLowerCase().includes(sellerSearch.toLowerCase());
+    
+    let statusMatch = true;
+    if (sellerStatusFilter !== 'All') {
+      if (sellerStatusFilter === 'Pending') {
+        statusMatch = s.status === 'Pending Approval' || s.status === 'Pending';
+      } else {
+        statusMatch = s.status === sellerStatusFilter;
+      }
+    }
+    return nameMatch && statusMatch;
+  });
   const filteredProducts = productsList.filter(p => {
     const matchSearch = (p.name || '').toLowerCase().includes(prodSearch.toLowerCase()) || (p.category || '').toLowerCase().includes(prodSearch.toLowerCase());
     const matchCat = prodFilter === '' || (p.category || '').toLowerCase() === prodFilter.toLowerCase();
@@ -350,6 +452,18 @@ const AdminDashboard = () => {
           >
             <Users size={18} />
             <span>Shoppers List</span>
+          </button>
+          <button 
+            className={`sidebar-menu-item ${activeTab === 'sellerRequests' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sellerRequests')}
+          >
+            <Store size={18} />
+            <span>Seller Requests</span>
+            {sellersList.filter(s => s.status === 'Pending Approval' || s.status === 'Pending').length > 0 && (
+              <span className="sidebar-badge danger">
+                {sellersList.filter(s => s.status === 'Pending Approval' || s.status === 'Pending').length}
+              </span>
+            )}
           </button>
         </nav>
 
@@ -976,6 +1090,109 @@ const AdminDashboard = () => {
               </div>
             )}
 
+            {/* TAB PANEL VIEW: SELLER REQUESTS */}
+            {activeTab === 'sellerRequests' && (
+              <div className="admin-table-container glass-effect animate-fade-in">
+                
+                {/* Search & Filter bar */}
+                <div className="table-action-header-row">
+                  <div className="table-search-box-wrapper">
+                    <Search size={16} className="search-ico" />
+                    <input 
+                      type="text" 
+                      placeholder="Search seller name, business, email..." 
+                      value={sellerSearch}
+                      onChange={(e) => setSellerSearch(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="inventory-right-filter-actions">
+                    <select 
+                      value={sellerStatusFilter}
+                      onChange={(e) => setSellerStatusFilter(e.target.value)}
+                      className="category-filter-select"
+                    >
+                      <option value="All">All Statuses</option>
+                      <option value="Pending">Pending Approval</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="table-workspace-scroller">
+                  <table className="admin-data-table">
+                    <thead>
+                      <tr>
+                        <th>Seller Name</th>
+                        <th>Business Name</th>
+                        <th>Email Address</th>
+                        <th>Phone Number</th>
+                        <th>GST Number</th>
+                        <th>Submitted Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSellers.map(seller => {
+                        const statusClass = seller.status === 'Approved' ? 'success' : (seller.status === 'Rejected' ? 'danger' : 'warning');
+                        return (
+                          <tr key={seller.id}>
+                            <td><strong>{seller.fullName}</strong></td>
+                            <td>{seller.businessName}</td>
+                            <td>{seller.email}</td>
+                            <td>{seller.phone}</td>
+                            <td style={{ textTransform: 'uppercase' }}>{seller.gstNumber}</td>
+                            <td>{new Date(seller.submittedAt).toLocaleDateString()}</td>
+                            <td>
+                              <span className={`status-pill ${statusClass}`}>
+                                {seller.status}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="table-action-btn-row">
+                                <button 
+                                  onClick={() => handleViewSellerDetails(seller)} 
+                                  className="action-circle-btn inspect"
+                                  title="View Details"
+                                >
+                                  <Eye size={14} />
+                                </button>
+                                {(seller.status === 'Pending Approval' || seller.status === 'Pending') && (
+                                  <>
+                                    <button 
+                                      onClick={() => handleApproveSeller(seller.id)} 
+                                      className="action-circle-btn approve"
+                                      title="Approve Seller"
+                                    >
+                                      <CheckCircle size={14} />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleOpenRejectModal(seller)} 
+                                      className="action-circle-btn delete"
+                                      title="Reject Seller"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {filteredSellers.length === 0 && (
+                    <p className="table-empty-row-text">No seller requests found matching parameters.</p>
+                  )}
+                </div>
+
+              </div>
+            )}
+
           </div>
         )}
 
@@ -1220,6 +1437,222 @@ const AdminDashboard = () => {
                 <button type="button" className="dialog-confirm-submit-btn" onClick={() => setShowOrderDetails(false)}>Close Inspection</button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== VIEW SELLER DETAILS MODAL ==================== */}
+      {showSellerDetails && viewingSeller && (
+        <div className="admin-dialog-backdrop animate-fade-in" style={{ zIndex: 900 }}>
+          <div className="admin-dialog glass-effect seller-details-dialog" style={{ maxWidth: '800px', width: '90%' }}>
+            <div className="dialog-header">
+              <h3>Seller Application Details - {viewingSeller.fullName}</h3>
+              <button onClick={() => setShowSellerDetails(false)} className="dialog-close-btn"><X size={18} /></button>
+            </div>
+            <div className="dialog-form-body" style={{ maxHeight: '70vh', overflowY: 'auto', display: 'block', padding: '24px' }}>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }} className="responsive-modal-grid">
+                {/* Personal Details */}
+                <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', marginBottom: '12px', fontSize: '15px', fontWeight: 'bold' }}>
+                    <Users size={16} />
+                    <span>Personal Details</span>
+                  </h4>
+                  <p style={{ margin: '6px 0', fontSize: '13.5px' }}><span className="text-muted">Full Name:</span> <strong>{viewingSeller.fullName}</strong></p>
+                  <p style={{ margin: '6px 0', fontSize: '13.5px' }}><span className="text-muted">Email Address:</span> <strong>{viewingSeller.email}</strong></p>
+                  <p style={{ margin: '6px 0', fontSize: '13.5px' }}><span className="text-muted">Phone Number:</span> <strong>{viewingSeller.phone}</strong></p>
+                </div>
+
+                {/* Business Details */}
+                <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', marginBottom: '12px', fontSize: '15px', fontWeight: 'bold' }}>
+                    <Store size={16} />
+                    <span>Business Details</span>
+                  </h4>
+                  <p style={{ margin: '6px 0', fontSize: '13.5px' }}><span className="text-muted">Business Name:</span> <strong>{viewingSeller.businessName}</strong></p>
+                  <p style={{ margin: '6px 0', fontSize: '13.5px' }}><span className="text-muted">GST Number:</span> <strong style={{ textTransform: 'uppercase' }}>{viewingSeller.gstNumber}</strong></p>
+                  <p style={{ margin: '6px 0', fontSize: '13.5px' }}><span className="text-muted">PAN Number:</span> <strong style={{ textTransform: 'uppercase' }}>{viewingSeller.panNumber}</strong></p>
+                  <p style={{ margin: '6px 0', fontSize: '13.5px' }}><span className="text-muted">Address:</span> <strong>{viewingSeller.businessAddress}, {viewingSeller.city}, {viewingSeller.state} - {viewingSeller.pincode}</strong></p>
+                </div>
+
+                {/* Bank Account Details */}
+                <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', gridColumn: 'span 2' }}>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-color)', marginBottom: '12px', fontSize: '15px', fontWeight: 'bold' }}>
+                    <DollarSign size={16} />
+                    <span>Bank Account Details</span>
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px' }}>
+                    <p style={{ margin: '0', fontSize: '13.5px' }}><span className="text-muted">Holder Name:</span> <strong>{viewingSeller.accountHolderName}</strong></p>
+                    <p style={{ margin: '0', fontSize: '13.5px' }}><span className="text-muted">Bank Name:</span> <strong>{viewingSeller.bankName}</strong></p>
+                    <p style={{ margin: '0', fontSize: '13.5px' }}><span className="text-muted">Account Number:</span> <strong>{viewingSeller.accountNumber}</strong></p>
+                    <p style={{ margin: '0', fontSize: '13.5px' }}><span className="text-muted">IFSC Code:</span> <strong style={{ textTransform: 'uppercase' }}>{viewingSeller.ifscCode}</strong></p>
+                    {viewingSeller.upiId && <p style={{ margin: '0', fontSize: '13.5px' }}><span className="text-muted">UPI ID:</span> <strong>{viewingSeller.upiId}</strong></p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Documents Verification Section */}
+              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--secondary-color)', marginBottom: '16px', fontSize: '15px', fontWeight: 'bold' }}>
+                  <ShieldAlert size={16} />
+                  <span>Document Verification System</span>
+                </h4>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {[
+                    { field: 'profilePhoto', label: 'Profile Photo', path: viewingSeller.profilePhoto },
+                    { field: 'gstCertificate', label: 'GST Certificate', path: viewingSeller.gstCertificate },
+                    { field: 'panCard', label: 'PAN Card', path: viewingSeller.panCard },
+                    { field: 'cancelledCheque', label: 'Cancelled Cheque', path: viewingSeller.cancelledCheque },
+                    { field: 'businessLicense', label: 'Business License (Optional)', path: viewingSeller.businessLicense }
+                  ].map((doc) => {
+                    if (doc.field === 'businessLicense' && !doc.path) return null;
+                    
+                    const isVerified = !!(verifiedDocs[viewingSeller.id]?.[doc.field]);
+                    
+                    return (
+                      <div key={doc.field} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }} className="responsive-doc-row">
+                        <div>
+                          <strong style={{ fontSize: '13.5px' }}>{doc.label}</strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                            {isVerified ? (
+                              <span style={{ color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', fontWeight: 'bold' }}>
+                                <CheckCircle2 size={13} /> Verified
+                              </span>
+                            ) : (
+                              <span style={{ color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', fontWeight: 'bold' }}>
+                                <XCircle size={13} /> Not Verified
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button 
+                            type="button" 
+                            className="dialog-cancel-btn"
+                            style={{ padding: '6px 12px', fontSize: '12px', minWidth: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => window.open(doc.path, '_blank')}
+                          >
+                            <Eye size={12} />
+                            <span>Preview</span>
+                          </button>
+
+                          <a 
+                            href={doc.path} 
+                            download 
+                            className="dialog-cancel-btn"
+                            style={{ padding: '6px 12px', fontSize: '12px', minWidth: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
+                          >
+                            <Download size={12} />
+                            <span>Download</span>
+                          </a>
+
+                          {isVerified ? (
+                            <button 
+                              type="button" 
+                              className="dialog-cancel-btn"
+                              style={{ padding: '6px 12px', fontSize: '12px', minWidth: 'auto', color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}
+                              onClick={() => handleToggleDocVerification(viewingSeller.id, doc.field, false)}
+                            >
+                              Unverify
+                            </button>
+                          ) : (
+                            <button 
+                              type="button" 
+                              className="dialog-confirm-submit-btn"
+                              style={{ padding: '6px 12px', fontSize: '12px', minWidth: 'auto', background: '#10b981' }}
+                              onClick={() => handleToggleDocVerification(viewingSeller.id, doc.field, true)}
+                            >
+                              Verify
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {viewingSeller.rejectionReason && (
+                <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', marginBottom: '20px' }}>
+                  <strong>Rejection Reason:</strong> {viewingSeller.rejectionReason}
+                </div>
+              )}
+
+              <div className="dialog-actions-footer">
+                <button type="button" className="dialog-cancel-btn" onClick={() => setShowSellerDetails(false)}>Close</button>
+                
+                {(viewingSeller.status === 'Pending Approval' || viewingSeller.status === 'Pending') && (
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                      type="button" 
+                      className="dialog-cancel-btn" 
+                      style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.4)', background: 'transparent' }}
+                      onClick={() => handleOpenRejectModal(viewingSeller)}
+                    >
+                      Reject Application
+                    </button>
+                    <button 
+                      type="button" 
+                      className="dialog-confirm-submit-btn"
+                      style={{ background: '#10b981' }}
+                      onClick={() => handleApproveSeller(viewingSeller.id)}
+                    >
+                      Approve Application
+                    </button>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== REJECT SELLER CONFIRMATION MODAL ==================== */}
+      {showRejectModal && viewingSeller && (
+        <div className="admin-dialog-backdrop animate-fade-in" style={{ zIndex: 1000 }}>
+          <div className="admin-dialog glass-effect" style={{ maxWidth: '500px', width: '90%' }}>
+            <div className="dialog-header">
+              <h3>Reject Seller Application</h3>
+              <button onClick={() => setShowRejectModal(false)} className="dialog-close-btn"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleRejectSellerSubmit} className="dialog-form-body" style={{ padding: '24px' }}>
+              <div className="form-double-span" style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Reason for Rejection *</label>
+                <select 
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="dialog-form-select"
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-dark)', border: '1px solid rgba(0,0,0,0.15)' }}
+                >
+                  <option value="Invalid GST Number">Invalid GST Number</option>
+                  <option value="Documents Missing">Documents Missing</option>
+                  <option value="Incorrect Information">Incorrect Information</option>
+                  <option value="Duplicate Registration">Duplicate Registration</option>
+                  <option value="Other">Other (Type below)</option>
+                </select>
+              </div>
+
+              {rejectionReason === 'Other' && (
+                <div className="form-double-span" style={{ marginTop: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Custom Rejection Reason *</label>
+                  <textarea
+                    required
+                    placeholder="Type the detailed reason for rejection..."
+                    value={customRejectionReason}
+                    onChange={(e) => setCustomRejectionReason(e.target.value)}
+                    style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-dark)', border: '1px solid rgba(0,0,0,0.15)' }}
+                  />
+                </div>
+              )}
+
+              <div className="dialog-actions-footer" style={{ marginTop: '25px' }}>
+                <button type="button" className="dialog-cancel-btn" onClick={() => setShowRejectModal(false)}>Cancel</button>
+                <button type="submit" className="dialog-confirm-submit-btn" style={{ background: '#ef4444' }}>Reject Application</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
