@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Camera, Edit3, Save, X, User, Mail, Phone, Calendar, ShieldAlert, Award } from 'lucide-react';
 import defaultAvatar from '../../assets/profile-avatar.png';
+import { authService } from '../../services/authService';
 
 const ProfileCard = ({ user, onUpdateUser, addToast }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -86,7 +87,7 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
     fileInputRef.current.click();
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       addToast('Name is required.', 'error');
@@ -97,16 +98,15 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
       return;
     }
 
-    const updatedUser = {
-      ...user,
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      gender: formData.gender,
-      dob: formData.dob,
-      bio: formData.bio.trim(),
-      avatar: avatar
-    };
+    try {
+      const res = await authService.updateProfile({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        gender: formData.gender,
+        dob: formData.dob,
+        bio: formData.bio.trim()
+      });
 
     const saveProfileBackend = async () => {
       try {

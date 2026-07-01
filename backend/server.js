@@ -131,6 +131,7 @@ const initializeTables = async () => {
       }
     } catch (colError) {
       console.error("Failed to alter products table to add seller_id:", colError.message);
+
     }
 
     // 5. Add user transaction metadata columns to orders if not exists

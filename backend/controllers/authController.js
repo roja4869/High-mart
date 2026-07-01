@@ -80,7 +80,7 @@ export const login = async (req, res, next) => {
 
     // Find user
     const result = await db.execute({
-      sql: "SELECT id, name, email, phone, password, role FROM users WHERE email = ?",
+      sql: "SELECT id, name, email, phone, password, role, gender, dob, bio, avatar FROM users WHERE email = ?",
       args: [email.toLowerCase()]
     });
 
