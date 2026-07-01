@@ -5,6 +5,7 @@ import { authService } from '../services/authService';
 import { productService } from '../services/productService';
 import { categoryService } from '../services/categoryService';
 import { ArrowRight, Star, Percent, ShoppingCart, Heart, ShieldCheck, Truck, RotateCcw, Headphones, Tag, BadgePercent, Mail, ChevronLeft, ChevronRight, Apple, Smartphone, Shirt, BookOpen, ToyBrick, Home as HomeIcon, Sparkles, Trophy, ShoppingBag } from 'lucide-react';
+import { ScrollAnimate, StaggerContainer, StaggerItem } from '../components/ScrollAnimate';
 import './Home.css';
 
 // Meta mapping for category icons and styles to preserve premium aesthetic
@@ -37,7 +38,6 @@ const Home = () => {
   const isAdmin = user?.role === 'admin';
   const [productsList, setProductsList] = useState([]);
   const [categories, setCategories] = useState([]);
-  console.log("[RENDER] Home Component", location);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -91,26 +91,21 @@ const Home = () => {
   // }, [location, navigate]);
 
   // 1. Flash Sale Timer (Hours, Minutes, Seconds)
-  const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 34, seconds: 19 });
+  const [secondsLeft, setSecondsLeft] = useState(4 * 3600 + 34 * 60 + 19);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        } else if (prev.hours > 0) {
-          return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        } else {
-          // Reset to 6 hours when finished
-          return { hours: 6, minutes: 0, seconds: 0 };
-        }
-      });
+      setSecondsLeft(prev => (prev > 0 ? prev - 1 : 6 * 3600));
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
+
+  const timeLeft = {
+    hours: Math.floor(secondsLeft / 3600),
+    minutes: Math.floor((secondsLeft % 3600) / 60),
+    seconds: secondsLeft % 60
+  };
 
   // 2. Reviews Carousel Slider
   const [activeReviewIndex, setActiveReviewIndex] = useState(0);
@@ -196,7 +191,7 @@ const Home = () => {
             );
           })}
         </div>
-      </section>
+      </ScrollAnimate>
 
       {/* 3. Special Offers Section (Flash Sale & Banners) */}
       <ScrollAnimate className="offers-section section-padding" id="deals">
@@ -249,7 +244,7 @@ const Home = () => {
         </div>
 
         <StaggerContainer className="products-grid">
-          {productsList.map(product => {
+          {productsList.slice(0, 8).map(product => {
             const isWishlisted = wishlist.some(item => item.id === product.id);
             return (
               <StaggerItem key={product.id} className="product-card" scaleOnHover={true}>
@@ -312,6 +307,12 @@ const Home = () => {
             );
           })}
         </StaggerContainer>
+        
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
+          <Link to="/products" className="hero-btn-primary" style={{ textDecoration: 'none' }}>
+            View All Products <ArrowRight size={18} />
+          </Link>
+        </div>
       </ScrollAnimate>
 
       {/* 5. Why Choose High Mart Section */}

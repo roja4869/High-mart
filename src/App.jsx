@@ -55,7 +55,7 @@ class ErrorBoundary extends React.Component {
 
 const App = () => {
   // Consume CartContext values
-  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast } = useContext(CartContext);
+  const { cart, addToCart, removeFromCart, clearCart, toasts, addToast, updateQuantity } = useContext(CartContext);
 
   // 1. Theme State
   const [theme, setTheme] = useState(() => {
@@ -196,14 +196,6 @@ const App = () => {
     }
   };
 
-  // Define helper variables for deprecated/alternate contexts
-  const user = currentUser;
-  const setUser = setCurrentUser;
-  const updateCartQuantity = updateQuantity;
-  const logout = () => {
-    authService.logout();
-    setCurrentUser(null);
-  };
 
   return (
     <ErrorBoundary>
