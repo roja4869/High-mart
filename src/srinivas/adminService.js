@@ -134,5 +134,36 @@ export const adminService = {
       console.error('Failed to delete product:', err.message);
       throw err;
     }
+  },
+
+  // ==================== SELLER REQUESTS MANAGEMENT ====================
+  async getSellers() {
+    try {
+      const response = await api.get('/admin/seller-requests');
+      return response.data.sellers;
+    } catch (err) {
+      console.error('Failed to get seller applications:', err.message);
+      throw err;
+    }
+  },
+
+  async approveSeller(id) {
+    try {
+      const response = await api.put(`/admin/seller-requests/${id}/approve`);
+      return response.data;
+    } catch (err) {
+      console.error('Failed to approve seller:', err.message);
+      throw err;
+    }
+  },
+
+  async rejectSeller(id, reason) {
+    try {
+      const response = await api.put(`/admin/seller-requests/${id}/reject`, { reason });
+      return response.data;
+    } catch (err) {
+      console.error('Failed to reject seller:', err.message);
+      throw err;
+    }
   }
 };

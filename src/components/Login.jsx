@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../App';
 import { authService } from '../services/authService';
-import { Mail, Lock, Eye, EyeOff, ShoppingBag } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShoppingBag, Store } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
@@ -270,6 +270,33 @@ const Login = () => {
                 <span className="btn-txt-label">Sign In</span>
                 <div className="btn-spin-wheel"></div>
               </button>
+
+              {/* Register as Seller Secondary Button */}
+              <button 
+                type="button" 
+                onClick={() => navigate('/seller/register')} 
+                className="seller-register-btn"
+                style={{
+                  marginTop: '12px',
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color, #e2e8f0)',
+                  background: 'var(--card-bg, #ffffff)',
+                  color: 'var(--text-color, #1e293b)',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Store size={16} />
+                <span>Register as Seller</span>
+              </button>
             </form>
 
             <div className="or-auth-divider">
@@ -326,6 +353,20 @@ const Login = () => {
                   <span>Admin Panel</span>
                 </button>
               </div>
+            </div>
+
+            {/* Become a Seller Section */}
+            <div className="seller-register-promo-divider">
+              <p className="seller-promo-text">
+                Want to sell your products on High-Mart?
+              </p>
+              <Link 
+                to="/seller/register" 
+                className="seller-promo-link"
+              >
+                <Store size={18} className="store-promo-icon" />
+                <span>Become a Seller</span>
+              </Link>
             </div>
 
             <div className="login-card-foot">
