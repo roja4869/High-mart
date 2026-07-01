@@ -74,6 +74,9 @@ export const submitSellerRequest = async (req, res, next) => {
   let query = '';
   let params = [];
   try {
+    console.log('[REGISTRATION] Incoming request body:', req.body);
+    console.log('[REGISTRATION] Uploaded files metadata:', req.files);
+
     const {
       fullName, email, phone, password, confirmPassword,
       businessName, gstNumber, panNumber,
@@ -84,32 +87,38 @@ export const submitSellerRequest = async (req, res, next) => {
 
     // 1. Validation checks
     if (!fullName || !email || !phone || !password || !businessName || !gstNumber || !panNumber || !businessAddress || !city || !state || !pincode || !accountHolderName || !bankName || !accountNumber || !ifscCode) {
-      return res.status(400).json({ error: 'All fields are required.' });
+      console.warn('[REGISTRATION] Validation failed: missing required fields');
+      return res.status(400).json({ success: false, message: 'All fields are required.', error: 'All fields are required.' });
     }
 
     if (password !== confirmPassword) {
-      return res.status(400).json({ error: 'Passwords do not match.' });
+      console.warn('[REGISTRATION] Validation failed: passwords do not match');
+      return res.status(400).json({ success: false, message: 'Passwords do not match.', error: 'Passwords do not match.' });
     }
 
     if (accountNumber !== confirmAccountNumber) {
-      return res.status(400).json({ error: 'Bank account numbers do not match.' });
+      console.warn('[REGISTRATION] Validation failed: bank account numbers do not match');
+      return res.status(400).json({ success: false, message: 'Bank account numbers do not match.', error: 'Bank account numbers do not match.' });
     }
 
     // Email format check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Please enter a valid email address.' });
+      console.warn('[REGISTRATION] Validation failed: invalid email format');
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.', error: 'Please enter a valid email address.' });
     }
 
     // IFSC validation
     const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
     if (!ifscRegex.test(ifscCode.toUpperCase())) {
-      return res.status(400).json({ error: 'Invalid IFSC code format.' });
+      console.warn('[REGISTRATION] Validation failed: invalid IFSC format');
+      return res.status(400).json({ success: false, message: 'Invalid IFSC code format.', error: 'Invalid IFSC code format.' });
     }
 
     // Account number length check
     if (accountNumber.length < 9 || accountNumber.length > 18) {
-      return res.status(400).json({ error: 'Account number must be between 9 and 18 digits.' });
+      console.warn('[REGISTRATION] Validation failed: invalid account number length');
+      return res.status(400).json({ success: false, message: 'Account number must be between 9 and 18 digits.', error: 'Account number must be between 9 and 18 digits.' });
     }
 
     const emailLower = email.toLowerCase();
@@ -118,41 +127,62 @@ export const submitSellerRequest = async (req, res, next) => {
     // Check unique constraints in users
     query = "SELECT id FROM users WHERE email = ? OR phone = ?";
     params = [emailLower, phoneTrim];
+    console.log(`[SQL EXECUTE] Query: ${query} | Params:`, params);
     const checkUser = await db.execute({ sql: query, args: params });
     if (checkUser.rows.length > 0) {
-      return res.status(400).json({ error: 'An account with this email or phone number already exists.' });
+      console.warn('[REGISTRATION] Unique constraint failed: account email or phone already exists');
+      return res.status(400).json({ success: false, message: 'An account with this email or phone number already exists.', error: 'An account with this email or phone number already exists.' });
     }
 
     // Check unique constraints in sellers
     query = "SELECT id, email, phone, gst_number, pan_number FROM sellers WHERE email = ? OR phone = ? OR gst_number = ? OR pan_number = ?";
     params = [emailLower, phoneTrim, gstNumber, panNumber];
+    console.log(`[SQL EXECUTE] Query: ${query} | Params:`, params);
     const checkSeller = await db.execute({ sql: query, args: params });
     if (checkSeller.rows.length > 0) {
       const match = checkSeller.rows[0];
-      if (match.email === emailLower) return res.status(400).json({ error: 'Email already exists.' });
-      if (match.phone === phoneTrim) return res.status(400).json({ error: 'Phone number already exists.' });
-      if (match.gst_number === gstNumber) return res.status(400).json({ error: 'GST number already exists.' });
-      if (match.pan_number === panNumber) return res.status(400).json({ error: 'PAN number already exists.' });
+      if (match.email === emailLower) {
+        return res.status(400).json({ success: false, message: 'Email already exists.', error: 'Email already exists.' });
+      }
+      if (match.phone === phoneTrim) {
+        return res.status(400).json({ success: false, message: 'Phone number already exists.', error: 'Phone number already exists.' });
+      }
+      if (match.gst_number === gstNumber) {
+        return res.status(400).json({ success: false, message: 'GST number already exists.', error: 'GST number already exists.' });
+      }
+      if (match.pan_number === panNumber) {
+        return res.status(400).json({ success: false, message: 'PAN number already exists.', error: 'PAN number already exists.' });
+      }
     }
 
     // Check unique constraints in pending requests
     query = "SELECT email, phone, gst_number, pan_number FROM seller_requests WHERE (email = ? OR phone = ? OR gst_number = ? OR pan_number = ?) AND status = 'Pending'";
     params = [emailLower, phoneTrim, gstNumber, panNumber];
+    console.log(`[SQL EXECUTE] Query: ${query} | Params:`, params);
     const checkRequest = await db.execute({ sql: query, args: params });
     if (checkRequest.rows.length > 0) {
       const match = checkRequest.rows[0];
-      if (match.email === emailLower) return res.status(400).json({ error: 'A pending application with this email already exists.' });
-      if (match.phone === phoneTrim) return res.status(400).json({ error: 'A pending application with this phone number already exists.' });
-      if (match.gst_number === gstNumber) return res.status(400).json({ error: 'A pending application with this GST already exists.' });
-      if (match.pan_number === panNumber) return res.status(400).json({ error: 'A pending application with this PAN already exists.' });
+      if (match.email === emailLower) {
+        return res.status(400).json({ success: false, message: 'A pending application with this email already exists.', error: 'A pending application with this email already exists.' });
+      }
+      if (match.phone === phoneTrim) {
+        return res.status(400).json({ success: false, message: 'A pending application with this phone number already exists.', error: 'A pending application with this phone number already exists.' });
+      }
+      if (match.gst_number === gstNumber) {
+        return res.status(400).json({ success: false, message: 'A pending application with this GST already exists.', error: 'A pending application with this GST already exists.' });
+      }
+      if (match.pan_number === panNumber) {
+        return res.status(400).json({ success: false, message: 'A pending application with this PAN already exists.', error: 'A pending application with this PAN already exists.' });
+      }
     }
 
-    // 2. Validate document presence
+    // 2. Validate document presence (profilePhoto, gstCertificate, panCard, cancelledCheque are required; businessLicense is optional)
     const files = req.files || {};
-    const requiredDocs = ['gstCertificate', 'panCard', 'cancelledCheque', 'businessLicense'];
+    const requiredDocs = ['gstCertificate', 'panCard', 'cancelledCheque', 'profilePhoto'];
     for (const doc of requiredDocs) {
       if (!files[doc] || files[doc].length === 0) {
-        return res.status(400).json({ error: `Document ${doc.replace(/([A-Z])/g, ' $1')} is required.` });
+        console.warn(`[REGISTRATION] Validation failed: missing document ${doc}`);
+        return res.status(400).json({ success: false, message: `Document ${doc.replace(/([A-Z])/g, ' $1')} is required.`, error: `Document ${doc.replace(/([A-Z])/g, ' $1')} is required.` });
       }
     }
 
@@ -162,6 +192,7 @@ export const submitSellerRequest = async (req, res, next) => {
     for (const field of uploadFields) {
       if (files[field] && files[field].length > 0) {
         const fileObj = files[field][0];
+        console.log(`[REGISTRATION] Uploading document ${field} from path: ${fileObj.path}`);
         documentUrls[field] = await uploadToCloudinary(fileObj.path, 'seller_docs');
       }
     }
@@ -171,7 +202,8 @@ export const submitSellerRequest = async (req, res, next) => {
       gstCertificate: documentUrls.gstCertificate || null,
       panCard: documentUrls.panCard || null,
       bankProof: documentUrls.cancelledCheque || null,
-      identityProof: documentUrls.businessLicense || null
+      identityProof: documentUrls.businessLicense || null,
+      profilePhoto: documentUrls.profilePhoto || null
     });
 
     // Hash password
@@ -206,27 +238,39 @@ export const submitSellerRequest = async (req, res, next) => {
       docUrlsJson
     ];
 
+    console.log(`[SQL EXECUTE] Query: ${query} | Params:`, params);
     await db.execute({ sql: query, args: params });
+    console.log('[REGISTRATION] Seller request stored successfully.');
 
     // 4.1 Auto-provision user account with role='seller' so they can log in immediately
+    const userQuery = `INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, 'seller')`;
+    const userParams = [
+      fullName,
+      emailLower,
+      phoneTrim,
+      hashedPassword
+    ];
+    console.log(`[SQL EXECUTE] Query: ${userQuery} | Params:`, userParams);
     await db.execute({
-      sql: `INSERT INTO users (name, email, phone, password, role) 
-            VALUES (?, ?, ?, ?, 'seller')`,
-      args: [
-        fullName,
-        emailLower,
-        phoneTrim,
-        hashedPassword
-      ]
+      sql: userQuery,
+      args: userParams
     });
+    console.log('[REGISTRATION] Auto-provisioned user record created successfully.');
 
-    res.status(201).json({
+    const successResponse = {
       success: true,
-      message: 'Seller application submitted successfully.'
-    });
+      message: 'Seller application submitted successfully. Waiting for admin approval.'
+    };
+    console.log('[REGISTRATION] Returning API success response:', successResponse);
+    res.status(201).json(successResponse);
   } catch (err) {
+    console.error('[REGISTRATION] Unexpected registration error occurred:', err);
     logSqlError('seller_requests', query, params, err);
-    next(err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'An internal database error occurred during registration.',
+      error: err.message || 'Internal Server Error'
+    });
   }
 };
 

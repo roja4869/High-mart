@@ -14,11 +14,8 @@ const ReviewSubmit = ({ formData, onSubmit, onPrev, isLoading, submitError, subm
           <span style={{ fontSize: '42px' }}>🎉</span>
         </div>
         <h2 className="success-title" style={{ color: 'var(--secondary-color)', fontSize: '1.8rem', fontWeight: '850', marginBottom: '12px' }}>
-          Seller Application Submitted Successfully!
+          Application submitted successfully. Waiting for admin approval.
         </h2>
-        <p className="success-description" style={{ fontSize: '15px', color: 'var(--text-muted)', marginBottom: '16px' }}>
-          Your application has been sent to the High-Mart Admin Team.
-        </p>
         <div className="status-badge-container" style={{ margin: '15px 0 20px 0', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.15)', padding: '10px 20px', borderRadius: '99px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
           <span className="status-label" style={{ fontWeight: '600' }}>Current Status:</span>
           <span className="status-value pending-color" style={{ fontWeight: '800', color: '#f59e0b', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>

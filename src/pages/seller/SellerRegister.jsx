@@ -18,7 +18,7 @@ const STEPS = [
 ];
 
 const SellerRegister = () => {
-  const { setCurrentUser, syncCart } = useContext(AppContext);
+  const { setCurrentUser, syncCart, addToast } = useContext(AppContext);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -84,6 +84,11 @@ const SellerRegister = () => {
       });
 
       if (response.data && response.data.success) {
+        // Trigger success toast
+        if (addToast) {
+          addToast(response.data.message || 'Application submitted successfully. Waiting for admin approval.', 'success');
+        }
+        
         // Auto-login the user immediately
         try {
           const loginData = await authService.login(formData.email, formData.password);
@@ -96,12 +101,19 @@ const SellerRegister = () => {
         }
         setSuccess(true);
       } else {
-        setError(response.data.error || 'Registration failed. Please try again.');
+        const backendError = response.data.message || response.data.error || 'Registration failed. Please try again.';
+        setError(backendError);
+        if (addToast) {
+          addToast(backendError, 'error');
+        }
       }
     } catch (err) {
       console.error('Seller registration submission error:', err);
-      const errMsg = err.response?.data?.error || err.message || 'Server connection error occurred.';
+      const errMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'Server connection error occurred.';
       setError(errMsg);
+      if (addToast) {
+        addToast(errMsg, 'error');
+      }
     } finally {
       setIsLoading(false);
     }
