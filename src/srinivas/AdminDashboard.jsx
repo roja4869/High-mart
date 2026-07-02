@@ -9,7 +9,7 @@ import {
   BarChart3, Plus, Search, Trash2, Edit3, ShieldAlert, ShoppingBag, 
   Users, DollarSign, Package, ClipboardList, LogOut, ArrowUpRight, 
   Grid, RefreshCw, AlertTriangle, UserCheck, Eye, ChevronDown, CheckCircle, X,
-  Store, Download, CheckCircle2, XCircle
+  Store, Download, CheckCircle2, XCircle, Loader2
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -81,6 +81,36 @@ const AdminDashboard = () => {
   const [editProdSubcategoryId, setEditProdSubcategoryId] = useState('');
   const [editProdStock, setEditProdStock] = useState('');
   const [editProdDesc, setEditProdDesc] = useState('');
+
+  const [newProdImage, setNewProdImage] = useState(null);
+  const [newProdImagePreview, setNewProdImagePreview] = useState(null);
+
+  const [editProdImage, setEditProdImage] = useState(null);
+  const [editProdImagePreview, setEditProdImagePreview] = useState(null);
+
+  const handleNewProdImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewProdImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewProdImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditProdImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditProdImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditProdImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -167,6 +197,9 @@ const AdminDashboard = () => {
     if (newProdSubcategoryId) {
       formData.append('subcategory_id', newProdSubcategoryId);
     }
+    if (newProdImage) {
+      formData.append('image', newProdImage);
+    }
 
     try {
       const response = await adminService.createProduct(formData);
@@ -179,6 +212,8 @@ const AdminDashboard = () => {
       setNewProdSubcategoryId('');
       setNewProdStock('');
       setNewProdDesc('');
+      setNewProdImage(null);
+      setNewProdImagePreview(null);
       setShowAddProduct(false);
 
       fetchAllData();
@@ -195,6 +230,8 @@ const AdminDashboard = () => {
     setEditProdSubcategoryId(product.subcategory_id || '');
     setEditProdStock(product.stock);
     setEditProdDesc(product.description || '');
+    setEditProdImage(null);
+    setEditProdImagePreview(product.image ? (product.image.startsWith('http') || product.image.startsWith('/') ? product.image : `/uploads/${product.image}`) : null);
     setShowEditProduct(true);
   };
 
@@ -207,10 +244,15 @@ const AdminDashboard = () => {
     formData.append('stock', editProdStock);
     formData.append('description', editProdDesc);
     formData.append('subcategory_id', editProdSubcategoryId || '');
+    if (editProdImage) {
+      formData.append('image', editProdImage);
+    }
 
     try {
       const response = await adminService.updateProduct(editingProduct.id, formData);
       addToast(response.message, 'success');
+      setEditProdImage(null);
+      setEditProdImagePreview(null);
       setShowEditProduct(false);
       fetchAllData();
     } catch (err) {
@@ -309,6 +351,64 @@ const AdminDashboard = () => {
   };
 
   // ==================== SELLER ACTIONS ====================
+  const [docLoading, setDocLoading] = useState({});
+
+  const handlePreview = async (filePath, label) => {
+    if (!filePath) {
+      addToast('Document not found.', 'error');
+      return;
+    }
+    setDocLoading(prev => ({ ...prev, [label]: true }));
+    try {
+      const response = await fetch(filePath, { method: 'HEAD' });
+      if (!response.ok) {
+        addToast('Document not found.', 'error');
+        return;
+      }
+      
+      const extension = filePath.split('.').pop()?.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension) || extension === 'pdf') {
+        window.open(filePath, '_blank');
+      } else {
+        window.open(filePath, '_blank');
+      }
+    } catch (err) {
+      addToast('Document not found.', 'error');
+    } finally {
+      setDocLoading(prev => ({ ...prev, [label]: false }));
+    }
+  };
+
+  const handleDownload = async (filePath, label) => {
+    if (!filePath) {
+      addToast('Document not found.', 'error');
+      return;
+    }
+    setDocLoading(prev => ({ ...prev, [label]: true }));
+    try {
+      const response = await fetch(filePath);
+      if (!response.ok) {
+        addToast('Document not found.', 'error');
+        return;
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const fileName = filePath.split('/').pop() || `${label.replace(/\s+/g, '_')}_document`;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      addToast('Document not found.', 'error');
+    } finally {
+      setDocLoading(prev => ({ ...prev, [label]: false }));
+    }
+  };
+
   const handleViewSellerDetails = (seller) => {
     setViewingSeller(seller);
     setShowSellerDetails(true);
@@ -1274,9 +1374,25 @@ const AdminDashboard = () => {
                   onChange={(e) => setNewProdStock(e.target.value)}
                 />
               </div>
-              <div className="form-input-box">
-                <label>Product Image Asset</label>
-                <input type="file" disabled className="dialog-file-input" />
+              <div className="form-input-box form-double-span" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label htmlFor="create-product-image-input" style={{ cursor: 'pointer', fontWeight: 'bold' }}>Product Image Asset</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <input 
+                    type="file" 
+                    id="create-product-image-input"
+                    accept="image/*"
+                    onChange={handleNewProdImageChange} 
+                    className="dialog-file-input" 
+                    style={{ display: 'block', width: '100%' }}
+                  />
+                  {newProdImagePreview && (
+                    <img 
+                      src={newProdImagePreview} 
+                      alt="Preview" 
+                      style={{ width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+                    />
+                  )}
+                </div>
               </div>
               <div className="form-double-span">
                 <label>Description Details</label>
@@ -1363,9 +1479,25 @@ const AdminDashboard = () => {
                   onChange={(e) => setEditProdStock(e.target.value)}
                 />
               </div>
-              <div className="form-input-box">
-                <label>Update Image File</label>
-                <input type="file" disabled className="dialog-file-input" />
+              <div className="form-input-box form-double-span" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label htmlFor="edit-product-image-input" style={{ cursor: 'pointer', fontWeight: 'bold' }}>Update Image File</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <input 
+                    type="file" 
+                    id="edit-product-image-input"
+                    accept="image/*"
+                    onChange={handleEditProdImageChange} 
+                    className="dialog-file-input" 
+                    style={{ display: 'block', width: '100%' }}
+                  />
+                  {editProdImagePreview && (
+                    <img 
+                      src={editProdImagePreview} 
+                      alt="Preview" 
+                      style={{ width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }}
+                    />
+                  )}
+                </div>
               </div>
               <div className="form-double-span">
                 <label>Description Details</label>
@@ -1532,21 +1664,31 @@ const AdminDashboard = () => {
                             type="button" 
                             className="dialog-cancel-btn"
                             style={{ padding: '6px 12px', fontSize: '12px', minWidth: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                            onClick={() => window.open(doc.path, '_blank')}
+                            disabled={docLoading[doc.label]}
+                            onClick={() => handlePreview(doc.path, doc.label)}
                           >
-                            <Eye size={12} />
+                            {docLoading[doc.label] ? (
+                              <Loader2 size={12} className="spinning-icon" />
+                            ) : (
+                              <Eye size={12} />
+                            )}
                             <span>Preview</span>
                           </button>
 
-                          <a 
-                            href={doc.path} 
-                            download 
+                          <button 
+                            type="button" 
                             className="dialog-cancel-btn"
-                            style={{ padding: '6px 12px', fontSize: '12px', minWidth: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
+                            style={{ padding: '6px 12px', fontSize: '12px', minWidth: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            disabled={docLoading[doc.label]}
+                            onClick={() => handleDownload(doc.path, doc.label)}
                           >
-                            <Download size={12} />
+                            {docLoading[doc.label] ? (
+                              <Loader2 size={12} className="spinning-icon" />
+                            ) : (
+                              <Download size={12} />
+                            )}
                             <span>Download</span>
-                          </a>
+                          </button>
 
                           {isVerified ? (
                             <button 

@@ -142,3 +142,50 @@ export const SellerModel = {
     return result.rows[0] || null;
   }
 };
+
+export const Seller = {
+  findOne: async (queryObj) => {
+    const orArr = queryObj.$or || [];
+    const emailItem = orArr.find(item => item.email !== undefined) || {};
+    const phoneItem = orArr.find(item => item.phone !== undefined) || {};
+    
+    // Normalize values
+    const emailVal = emailItem.email ? String(emailItem.email).toLowerCase().trim() : '';
+    const phoneVal = phoneItem.phone ? String(phoneItem.phone).trim() : '';
+
+    console.log('[MONGODB QUERY SIMULATION] Checking email or phone duplicate for:', { email: emailVal, phone: phoneVal });
+    
+    // Check sellers table
+    const checkSeller = await db.execute({
+      sql: "SELECT id, email, phone FROM sellers WHERE email = ? OR phone = ?",
+      args: [emailVal, phoneVal]
+    });
+    if (checkSeller.rows.length > 0) {
+      console.log('[MONGODB QUERY SIMULATION] Match found in sellers table:', checkSeller.rows[0]);
+      return checkSeller.rows[0];
+    }
+
+    // Check seller_requests table (for pending requests)
+    const checkRequest = await db.execute({
+      sql: "SELECT id, email, phone FROM seller_requests WHERE email = ? OR phone = ?",
+      args: [emailVal, phoneVal]
+    });
+    if (checkRequest.rows.length > 0) {
+      console.log('[MONGODB QUERY SIMULATION] Match found in seller_requests table:', checkRequest.rows[0]);
+      return checkRequest.rows[0];
+    }
+
+    // Check users table to prevent collision
+    const checkUser = await db.execute({
+      sql: "SELECT id, email, phone FROM users WHERE email = ? OR phone = ?",
+      args: [emailVal, phoneVal]
+    });
+    if (checkUser.rows.length > 0) {
+      console.log('[MONGODB QUERY SIMULATION] Match found in users table:', checkUser.rows[0]);
+      return checkUser.rows[0];
+    }
+
+    console.log('[MONGODB QUERY SIMULATION] No duplicates found.');
+    return null;
+  }
+};

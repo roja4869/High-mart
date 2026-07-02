@@ -147,6 +147,7 @@ const Filters = ({
       if (prev.includes(cat)) {
         return prev.filter(c => c !== cat);
       } else {
+        setExpandedNodes(exp => ({ ...exp, [cat]: true }));
         return [...prev, cat];
       }
     });

@@ -135,15 +135,39 @@ const Products = () => {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [selectedGenders, setSelectedGenders] = useState([]);
 
-  // Load products on mount
+  // Load products when filters change
   useEffect(() => {
     const loadProducts = async () => {
       setIsLoading(true);
       setError(null);
       
-      console.log("Fetching all products on mount...");
+      const params = {};
+
+      // 1. Category/Subcategory matching from selectedCategories
+      if (selectedCategories.length > 0) {
+        const activePath = selectedCategories[0]; // first selected category path
+        const pathParts = activePath.split(' > ');
+        if (pathParts[0]) {
+          params.category = pathParts[0];
+        }
+        if (pathParts.length > 1) {
+          params.subcategory = pathParts[pathParts.length - 1];
+        }
+      }
+
+      // 2. Search Query
+      if (searchQuery.trim() !== '') {
+        params.search = searchQuery;
+      }
+
+      // 3. Gender Filter
+      if (selectedGenders.length > 0) {
+        params.gender = selectedGenders.join(',');
+      }
+
+      console.log("Fetching products with params:", params);
       try {
-        const response = await productService.getProducts({});
+        const response = await productService.getProducts(params);
         if (response) {
           console.log(`Successfully fetched ${response.length} products.`);
           setProducts(response);
@@ -156,17 +180,16 @@ const Products = () => {
       }
     };
     loadProducts();
-  }, []);
+  }, [selectedCategories, searchQuery, selectedGenders, activeNavbarTab]);
 
-  // Parse category search query param on mount
+  // Parse category search query param on mount and location search updates
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const catParam = params.get('category');
     if (catParam) {
-      // Set selected categories array
       setSelectedCategories([catParam]);
     }
-  }, []);
+  }, [window.location.search]);
 
   // Compute unique brands of currently matching categories to show in sidebar
   const availableBrands = useMemo(() => {

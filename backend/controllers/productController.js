@@ -400,6 +400,31 @@ export const getProducts = async (req, res, next) => {
       args.push(parseInt(subcategory_id));
     }
 
+    // Filter by subcategory name (including all descendants recursively)
+    if (req.query.subcategory) {
+      const subcatName = req.query.subcategory.toLowerCase();
+      const subcatRes = await db.execute({
+        sql: "SELECT id FROM subcategories WHERE LOWER(name) = ?",
+        args: [subcatName]
+      });
+      if (subcatRes.rows.length > 0) {
+        const subcatId = subcatRes.rows[0].id;
+        sql += ` AND p.subcategory_id IN (
+          WITH RECURSIVE subcat_tree(id) AS (
+            SELECT ?
+            UNION ALL
+            SELECT r.child_id
+            FROM category_relationships r
+            JOIN subcat_tree t ON r.parent_id = t.id AND r.parent_type = 'subcategory' AND r.child_type = 'subcategory'
+          )
+          SELECT id FROM subcat_tree
+        )`;
+        args.push(subcatId);
+      } else {
+        sql += ` AND 1=0`;
+      }
+    }
+
     // Search by name or description
     if (search) {
       sql += ` AND (LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ?)`;

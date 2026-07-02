@@ -108,6 +108,7 @@ const Login = () => {
   // Quick Demo Access Login
   const handleQuickLogin = async (roleType) => {
     setIsLoading(true);
+    const from = location.state?.from?.pathname || '/dashboard';
     try {
       const emailVal = roleType === 'admin' ? 'admin@example.com' : 'jane@example.com';
       const passVal = roleType === 'admin' ? 'admin123' : 'password123';
