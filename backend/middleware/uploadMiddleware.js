@@ -60,3 +60,38 @@ export const uploadSellerDocs = multer({
   { name: 'businessLicense', maxCount: 1 },
   { name: 'profilePhoto', maxCount: 1 }
 ]);
+
+const productUploadDir = './uploads/products';
+
+if (!fs.existsSync(productUploadDir)) {
+  fs.mkdirSync(productUploadDir, { recursive: true });
+}
+
+const productStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, productUploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique timestamp filename
+    const cleanOrigName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '-');
+    cb(null, Date.now() + '-' + cleanOrigName);
+  }
+});
+
+const productImageFilter = (req, file, cb) => {
+  const allowedFileTypes = /jpeg|jpg|png|webp/;
+  const extName = allowedFileTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimeType = allowedFileTypes.test(file.mimetype);
+
+  if (extName && mimeType) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid image format. Only JPEG, JPG, PNG, and WEBP formats are allowed!'));
+  }
+};
+
+export const uploadProductImage = multer({
+  storage: productStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Max 5MB
+  fileFilter: productImageFilter
+});

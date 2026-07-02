@@ -129,9 +129,18 @@ const initializeTables = async () => {
         await db.execute("CREATE INDEX IF NOT EXISTS idx_products_seller ON products(seller_id)");
         console.log("Added seller_id column and index to products table.");
       }
+      if (!columns.includes('image')) {
+        console.log("Altering table 'products' to add column 'image'...");
+        await db.execute("ALTER TABLE products ADD COLUMN image TEXT DEFAULT 'default_product.jpg'");
+        console.log("Added image column to products table.");
+      }
+      if (!columns.includes('images')) {
+        console.log("Altering table 'products' to add column 'images'...");
+        await db.execute("ALTER TABLE products ADD COLUMN images TEXT");
+        console.log("Added images column to products table.");
+      }
     } catch (colError) {
-      console.error("Failed to alter products table to add seller_id:", colError.message);
-
+      console.error("Failed to alter products table:", colError.message);
     }
 
     // 5. Add user transaction metadata columns to orders if not exists

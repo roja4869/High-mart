@@ -64,6 +64,8 @@ const SellerDashboard = () => {
   const [newProdCategory, setNewProdCategory] = useState('');
   const [newProdStock, setNewProdStock] = useState('');
   const [newProdDesc, setNewProdDesc] = useState('');
+  const [newProdImage, setNewProdImage] = useState(null);
+  const [newProdImagePreview, setNewProdImagePreview] = useState(null);
 
   const fetchDashboardStats = async () => {
     setIsStatsLoading(true);
@@ -194,6 +196,9 @@ const SellerDashboard = () => {
     formData.append('category', newProdCategory);
     formData.append('stock', newProdStock);
     formData.append('description', newProdDesc);
+    if (newProdImage) {
+      formData.append('image', newProdImage);
+    }
 
     try {
       await axios.post('/api/products', formData, {
@@ -210,6 +215,8 @@ const SellerDashboard = () => {
       setNewProdCategory('');
       setNewProdStock('');
       setNewProdDesc('');
+      setNewProdImage(null);
+      setNewProdImagePreview(null);
       setActiveTab('products');
       fetchDashboardStats();
     } catch (err) {
@@ -686,8 +693,57 @@ const SellerDashboard = () => {
                       </div>
                       <div className="form-group">
                         <label>Product Image File</label>
-                        <input type="file" disabled className="file-disabled-box" />
-                        <span className="helper-label">* Auto-selected dummy image applies for demo cataloging</span>
+                        {!newProdImagePreview ? (
+                          <>
+                            <input 
+                              type="file" 
+                              accept="image/jpeg,image/jpg,image/png,image/webp"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+
+                                // Validate size
+                                if (file.size > 5 * 1024 * 1024) {
+                                  addToast('Image size exceeds 5MB limit.', 'error');
+                                  e.target.value = '';
+                                  return;
+                                }
+
+                                // Validate type
+                                const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                                if (!allowed.includes(file.type)) {
+                                  addToast('Only JPG, JPEG, PNG, and WEBP formats are allowed.', 'error');
+                                  e.target.value = '';
+                                  return;
+                                }
+
+                                setNewProdImage(file);
+                                setNewProdImagePreview(URL.createObjectURL(file));
+                              }}
+                            />
+                            <span className="helper-label">* Select a JPEG, PNG, or WEBP image (Max 5MB)</span>
+                          </>
+                        ) : (
+                          <div className="product-image-preview-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
+                            <div className="preview-thumbnail" style={{ width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color, #cbd5e1)' }}>
+                              <img src={newProdImagePreview} alt="Product Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                            <div className="preview-details" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <span className="preview-filename" style={{ fontSize: '12px', fontWeight: '600', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{newProdImage.name}</span>
+                              <button 
+                                type="button" 
+                                className="btn-remove-preview"
+                                onClick={() => {
+                                  setNewProdImage(null);
+                                  setNewProdImagePreview(null);
+                                }}
+                                style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: '700', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+                              >
+                                Remove Image
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
