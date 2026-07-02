@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { db } from '../data/db.js';
 import { uploadToCloudinary } from '../services/cloudinaryService.js';
+import { Seller } from '../models/Seller.js';
 
 const uuidv4 = () => crypto.randomUUID();
 
@@ -54,6 +55,7 @@ const mapRequestToCamel = (req) => {
     cancelledCheque: docs.bankProof || null, // compatibility
     identityProof: docs.identityProof || null,
     businessLicense: docs.identityProof || null, // compatibility
+    profilePhoto: docs.profilePhoto || null,
     status: req.status,
     adminRemarks: req.admin_remarks,
     rejectionReason: req.admin_remarks, // compatibility
@@ -124,29 +126,67 @@ export const submitSellerRequest = async (req, res, next) => {
     const emailLower = email.toLowerCase();
     const phoneTrim = phone.trim();
 
-    // Check unique constraints in users
-    query = "SELECT id FROM users WHERE email = ? OR phone = ?";
-    params = [emailLower, phoneTrim];
-    console.log(`[SQL EXECUTE] Query: ${query} | Params:`, params);
-    const checkUser = await db.execute({ sql: query, args: params });
-    if (checkUser.rows.length > 0) {
-      console.warn('[REGISTRATION] Unique constraint failed: account email or phone already exists');
-      return res.status(400).json({ success: false, message: 'An account with this email or phone number already exists.', error: 'An account with this email or phone number already exists.' });
+    // Console logs required by user instructions
+    console.log('[REGISTRATION] Incoming request body:', req.body);
+    console.log('[REGISTRATION] Email:', req.body.email);
+    console.log('[REGISTRATION] Phone:', req.body.phone);
+
+    const mongoQuery = {
+      $or: [
+        { email: req.body.email },
+        { phone: req.body.phone }
+      ]
+    };
+    console.log('[REGISTRATION] MongoDB duplicate query:', JSON.stringify(mongoQuery));
+
+    const existingSeller = await Seller.findOne(mongoQuery);
+    console.log('[REGISTRATION] Query result:', existingSeller);
+
+    if (existingSeller) {
+      // Check if the matching record is a pending request (or an unapproved seller user)
+      let isPending = false;
+      const checkReq = await db.execute({
+        sql: "SELECT status FROM seller_requests WHERE email = ? OR phone = ?",
+        args: [emailLower, phoneTrim]
+      });
+      const checkSel = await db.execute({
+        sql: "SELECT status FROM sellers WHERE email = ? OR phone = ?",
+        args: [emailLower, phoneTrim]
+      });
+
+      const reqStatus = checkReq.rows[0]?.status;
+      if (checkReq.rows.length > 0 && (reqStatus === 'Pending' || reqStatus === 'Pending Approval') && checkSel.rows.length === 0) {
+        isPending = true;
+      }
+
+      if (isPending) {
+        console.log('[REGISTRATION] Found existing pending application. Deleting to allow overwrite/resubmission.');
+        await db.execute({
+          sql: "DELETE FROM seller_requests WHERE email = ? OR phone = ?",
+          args: [emailLower, phoneTrim]
+        });
+        await db.execute({
+          sql: "DELETE FROM users WHERE (email = ? OR phone = ?) AND role = 'seller'",
+          args: [emailLower, phoneTrim]
+        });
+        console.log('[REGISTRATION] Deleted pending request and user record. Proceeding with registration.');
+      } else {
+        console.warn('[REGISTRATION] Unique constraint failed: account email or phone already exists');
+        return res.status(400).json({ 
+          success: false, 
+          message: 'An account with this email or phone number already exists.', 
+          error: 'An account with this email or phone number already exists.' 
+        });
+      }
     }
 
-    // Check unique constraints in sellers
-    query = "SELECT id, email, phone, gst_number, pan_number FROM sellers WHERE email = ? OR phone = ? OR gst_number = ? OR pan_number = ?";
-    params = [emailLower, phoneTrim, gstNumber, panNumber];
+    // Check unique constraints for GST number and PAN number in sellers
+    query = "SELECT id, gst_number, pan_number FROM sellers WHERE gst_number = ? OR pan_number = ?";
+    params = [gstNumber, panNumber];
     console.log(`[SQL EXECUTE] Query: ${query} | Params:`, params);
     const checkSeller = await db.execute({ sql: query, args: params });
     if (checkSeller.rows.length > 0) {
       const match = checkSeller.rows[0];
-      if (match.email === emailLower) {
-        return res.status(400).json({ success: false, message: 'Email already exists.', error: 'Email already exists.' });
-      }
-      if (match.phone === phoneTrim) {
-        return res.status(400).json({ success: false, message: 'Phone number already exists.', error: 'Phone number already exists.' });
-      }
       if (match.gst_number === gstNumber) {
         return res.status(400).json({ success: false, message: 'GST number already exists.', error: 'GST number already exists.' });
       }
@@ -155,25 +195,25 @@ export const submitSellerRequest = async (req, res, next) => {
       }
     }
 
-    // Check unique constraints in pending requests
-    query = "SELECT email, phone, gst_number, pan_number FROM seller_requests WHERE (email = ? OR phone = ? OR gst_number = ? OR pan_number = ?) AND status = 'Pending'";
-    params = [emailLower, phoneTrim, gstNumber, panNumber];
+    // Check unique constraints for GST number and PAN number in pending requests.
+    // If a request exists under Pending, we delete it to allow overwrite.
+    query = "SELECT id, gst_number, pan_number, email, phone FROM seller_requests WHERE (gst_number = ? OR pan_number = ?) AND status = 'Pending'";
+    params = [gstNumber, panNumber];
     console.log(`[SQL EXECUTE] Query: ${query} | Params:`, params);
     const checkRequest = await db.execute({ sql: query, args: params });
     if (checkRequest.rows.length > 0) {
       const match = checkRequest.rows[0];
-      if (match.email === emailLower) {
-        return res.status(400).json({ success: false, message: 'A pending application with this email already exists.', error: 'A pending application with this email already exists.' });
-      }
-      if (match.phone === phoneTrim) {
-        return res.status(400).json({ success: false, message: 'A pending application with this phone number already exists.', error: 'A pending application with this phone number already exists.' });
-      }
-      if (match.gst_number === gstNumber) {
-        return res.status(400).json({ success: false, message: 'A pending application with this GST already exists.', error: 'A pending application with this GST already exists.' });
-      }
-      if (match.pan_number === panNumber) {
-        return res.status(400).json({ success: false, message: 'A pending application with this PAN already exists.', error: 'A pending application with this PAN already exists.' });
-      }
+      console.log('[REGISTRATION] Found pending request with same GST/PAN. Deleting to allow overwrite:', match.id);
+      
+      // Delete the request and the user record
+      await db.execute({
+        sql: "DELETE FROM seller_requests WHERE id = ?",
+        args: [match.id]
+      });
+      await db.execute({
+        sql: "DELETE FROM users WHERE (email = ? OR phone = ?) AND role = 'seller'",
+        args: [match.email, match.phone]
+      });
     }
 
     // 2. Validate document presence (profilePhoto, gstCertificate, panCard, cancelledCheque are required; businessLicense is optional)

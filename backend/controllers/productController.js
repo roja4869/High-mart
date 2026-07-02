@@ -59,6 +59,14 @@ const formatProductRow = (row) => {
       return img;
     });
   }
+
+  // Schema compatibility fields
+  product.sellerId = product.seller_id;
+  product.sellerName = product.seller_name || 'High Mart';
+  product.approvalStatus = 'Approved';
+  product.isPublished = true;
+  product.isActive = product.stock > 0;
+  product.status = product.stock > 0 ? 'Active' : 'Out of Stock';
   
   return product;
 };
@@ -96,9 +104,9 @@ const FASHION_GENDER_IMAGE_MAP = {
   'Men_Smart Watch': 'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&q=80',
 
   // Men Accessories
-  'Men_Belt': 'https://images.unsplash.com/photo-1624222247344-550fb8ec5b5d?w=600&q=80',
+  'Men_Belt': 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=600&q=80',
   'Men_Cap': 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&q=80',
-  'Men_Wallet': 'https://images.unsplash.com/photo-1627124118303-624c8f94e224?w=600&q=80',
+  'Men_Wallet': 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=600&q=80',
 
   // Women Clothing
   'Women_T-Shirt': 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600&q=80',
@@ -158,10 +166,43 @@ const FASHION_GENDER_IMAGE_MAP = {
   'Kids_Hair Accessories': 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=600&q=80'
 };
 
+const MEN_IMAGES = new Set(
+  Object.entries(FASHION_GENDER_IMAGE_MAP)
+    .filter(([key]) => key.startsWith('Men_'))
+    .map(([_, url]) => url)
+);
+
+const WOMEN_IMAGES = new Set(
+  Object.entries(FASHION_GENDER_IMAGE_MAP)
+    .filter(([key]) => key.startsWith('Women_'))
+    .map(([_, url]) => url)
+);
+
+const KIDS_IMAGES = new Set(
+  Object.entries(FASHION_GENDER_IMAGE_MAP)
+    .filter(([key]) => key.startsWith('Kids_'))
+    .map(([_, url]) => url)
+);
+
 const getAutoReplaceImage = (gender, subCategory, productType, currentImage) => {
-  if (!currentImage || !currentImage.startsWith('http')) {
+  const brokenUrlsList = [
+    'https://images.unsplash.com/photo-1541140111954-75a9e3b08e2f?w=600&q=80',
+    'https://images.unsplash.com/photo-1544224013-c3b8a1c3e4a2?w=600&q=80',
+    'https://images.unsplash.com/photo-1574269661728-79659b722d56?w=600&q=80',
+    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=600&q=80',
+    'https://images.unsplash.com/photo-1514989940723-e8e5163ccbe8?w=600&q=80',
+    'https://images.unsplash.com/photo-1627124118303-624c8f94e224?w=600&q=80',
+    'https://images.unsplash.com/photo-1582142407894-ec85a1268a4e?w=600&q=80',
+    'https://images.unsplash.com/photo-1624222247344-550fb8ec5b5d?w=600&q=80'
+  ];
+
+  const isGenericPlaceholder = currentImage && currentImage.includes('photo-1523275335684-37898b6baf30') && subCategory !== 'Watches';
+  const isBrokenOrMissing = !currentImage || currentImage === 'default_product.jpg' || !currentImage.startsWith('http') || isGenericPlaceholder || brokenUrlsList.some(bu => currentImage.includes(bu.split('?')[0]));
+
+  if (!isBrokenOrMissing) {
     return currentImage;
   }
+
   const key = `${gender}_${productType}`;
   if (FASHION_GENDER_IMAGE_MAP[key]) {
     return FASHION_GENDER_IMAGE_MAP[key];
@@ -177,7 +218,6 @@ const validateProductMapping = (categoryName, pathParts, name, description, imag
   const categoryLower = (categoryName || '').toLowerCase();
   const nameLower = (name || '').toLowerCase();
   const descLower = (description || '').toLowerCase();
-  const imageLower = (image || '').toLowerCase();
 
   if (categoryLower === 'fashion') {
     if (!pathParts || pathParts.length === 0) {
@@ -203,15 +243,17 @@ const validateProductMapping = (categoryName, pathParts, name, description, imag
       throw new Error("Validation Error: Fashion products must specify a target gender (Men, Women, or Kids) in their subcategory or product details.");
     }
 
+    const femaleKeywords = /\b(women|womens|female|lady|ladies|girl|girls|saree|kurti|dress|heels|handbag)\b/;
+    const maleKeywords = /\b(men|mens|male|boy|boys|formal shoes)\b/;
+    const adultKeywords = /\b(saree|formal shoes|heels)\b/;
+
     if (gender === 'Men') {
-      const femaleKeywords = /\b(women|womens|female|lady|ladies|girl|girls|saree|kurti|dress|heels|handbag)\b/;
-      if (femaleKeywords.test(nameLower) || femaleKeywords.test(descLower) || femaleKeywords.test(imageLower)) {
+      if (femaleKeywords.test(nameLower) || femaleKeywords.test(descLower) || (image && (WOMEN_IMAGES.has(image) || KIDS_IMAGES.has(image) || femaleKeywords.test(image.toLowerCase())))) {
         throw new Error("Validation Error: Men's category cannot contain female apparel, handbag, heels, or female keywords.");
       }
     }
     if (gender === 'Women') {
-      const maleKeywords = /\b(men|mens|male|boy|boys|formal shoes)\b/;
-      if (maleKeywords.test(nameLower) || maleKeywords.test(descLower) || maleKeywords.test(imageLower)) {
+      if (maleKeywords.test(nameLower) || maleKeywords.test(descLower) || (image && (MEN_IMAGES.has(image) || KIDS_IMAGES.has(image) || maleKeywords.test(image.toLowerCase())))) {
         throw new Error("Validation Error: Women's category cannot contain men's apparel, formal shoes, or male keywords.");
       }
     }
@@ -219,8 +261,7 @@ const validateProductMapping = (categoryName, pathParts, name, description, imag
       if (!['Clothing', 'Footwear', 'Accessories'].includes(subCategory)) {
         throw new Error("Validation Error: Kids' category can only contain Clothing, Footwear, or Accessories.");
       }
-      const adultKeywords = /\b(saree|formal shoes|heels)\b/;
-      if (adultKeywords.test(nameLower) || adultKeywords.test(descLower) || adultKeywords.test(imageLower)) {
+      if (adultKeywords.test(nameLower) || adultKeywords.test(descLower) || (image && (MEN_IMAGES.has(image) || WOMEN_IMAGES.has(image) || adultKeywords.test(image.toLowerCase())))) {
         throw new Error("Validation Error: Kids' category cannot contain sarees, heels, or adult formal shoes.");
       }
     }
@@ -339,11 +380,13 @@ export const getProducts = async (req, res, next) => {
     
     let sql = `
       SELECT p.*, c.name as category,
+             sel.business_name as seller_name,
              s1.name as s1_name,
              s2.name as s2_name,
              s3.name as s3_name
       FROM products p 
       LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN sellers sel ON p.seller_id = sel.id
       LEFT JOIN subcategories s1 ON p.subcategory_id = s1.id
       LEFT JOIN category_relationships r1 ON s1.id = r1.child_id AND r1.parent_type = 'subcategory'
       LEFT JOIN subcategories s2 ON r1.parent_id = s2.id
@@ -356,7 +399,7 @@ export const getProducts = async (req, res, next) => {
     // Filter by seller ID
     if (seller_id) {
       sql += ` AND p.seller_id = ?`;
-      args.push(parseInt(seller_id));
+      args.push(isNaN(parseInt(seller_id)) ? seller_id : parseInt(seller_id));
     }
 
     // Filter by category name
@@ -384,6 +427,31 @@ export const getProducts = async (req, res, next) => {
         SELECT id FROM subcat_tree
       )`;
       args.push(parseInt(subcategory_id));
+    }
+
+    // Filter by subcategory name (including all descendants recursively)
+    if (req.query.subcategory) {
+      const subcatName = req.query.subcategory.toLowerCase();
+      const subcatRes = await db.execute({
+        sql: "SELECT id FROM subcategories WHERE LOWER(name) = ?",
+        args: [subcatName]
+      });
+      if (subcatRes.rows.length > 0) {
+        const subcatId = subcatRes.rows[0].id;
+        sql += ` AND p.subcategory_id IN (
+          WITH RECURSIVE subcat_tree(id) AS (
+            SELECT ?
+            UNION ALL
+            SELECT r.child_id
+            FROM category_relationships r
+            JOIN subcat_tree t ON r.parent_id = t.id AND r.parent_type = 'subcategory' AND r.child_type = 'subcategory'
+          )
+          SELECT id FROM subcat_tree
+        )`;
+        args.push(subcatId);
+      } else {
+        sql += ` AND 1=0`;
+      }
     }
 
     // Search by name or description
@@ -461,11 +529,13 @@ export const getProductById = async (req, res, next) => {
     const result = await db.execute({
       sql: `
         SELECT p.*, c.name as category,
+               sel.business_name as seller_name,
                s1.name as s1_name,
                s2.name as s2_name,
                s3.name as s3_name
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sellers sel ON p.seller_id = sel.id
         LEFT JOIN subcategories s1 ON p.subcategory_id = s1.id
         LEFT JOIN category_relationships r1 ON s1.id = r1.child_id AND r1.parent_type = 'subcategory'
         LEFT JOIN subcategories s2 ON r1.parent_id = s2.id
@@ -524,7 +594,7 @@ export const getProductById = async (req, res, next) => {
  */
 export const createProduct = async (req, res, next) => {
   try {
-    const { name, description, price, category, subcategory_id, stock } = req.body;
+    const { name, description, price, category, subcategory_id, subcatId: reqSubcatId, stock } = req.body;
 
     if (!name || !price || !category || stock === undefined) {
       res.status(400);
@@ -533,7 +603,8 @@ export const createProduct = async (req, res, next) => {
 
     const priceNum = parseFloat(price);
     const stockNum = parseInt(stock);
-    const subcatId = subcategory_id ? parseInt(subcategory_id) : null;
+    const resolvedSubcatId = subcategory_id || reqSubcatId || req.body.subcatId;
+    const subcatId = resolvedSubcatId ? parseInt(resolvedSubcatId) : null;
 
     if (isNaN(priceNum) || priceNum <= 0) {
       res.status(400);
@@ -565,6 +636,19 @@ export const createProduct = async (req, res, next) => {
 
     // Fetch path map to resolve details and validate
     const { pathMap, rootCategoryMap } = await getCategoryPathMap();
+
+    if (subcatId) {
+      if (!pathMap[subcatId]) {
+        res.status(400);
+        throw new Error('Invalid subcategory ID');
+      }
+      const rootCat = rootCategoryMap[subcatId];
+      if (!rootCat || rootCat.toLowerCase() !== category.toLowerCase()) {
+        res.status(400);
+        throw new Error(`Validation Error: Selected subcategory does not belong to the selected category '${category}'.`);
+      }
+    }
+
     let subCategory = null;
     let gender = null;
     let productType = null;
@@ -642,9 +726,10 @@ export const createProduct = async (req, res, next) => {
     // Fetch full new product with category
     const finalResult = await db.execute({
       sql: `
-        SELECT p.*, c.name as category 
+        SELECT p.*, c.name as category, sel.business_name as seller_name
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sellers sel ON p.seller_id = sel.id
         WHERE p.id = ?
       `,
       args: [newProductId]
@@ -697,7 +782,7 @@ export const updateProduct = async (req, res, next) => {
       }
     }
 
-    const { name, description, price, category, subcategory_id, stock } = req.body;
+    const { name, description, price, category, subcategory_id, subcatId: reqSubcatId, stock } = req.body;
 
     let categoryId = currentProduct.category_id;
     if (category !== undefined) {
@@ -720,8 +805,9 @@ export const updateProduct = async (req, res, next) => {
     }
 
     let subcatId = currentProduct.subcategory_id;
-    if (subcategory_id !== undefined) {
-      subcatId = subcategory_id ? parseInt(subcategory_id) : null;
+    const resolvedSubcatVal = subcategory_id !== undefined ? subcategory_id : reqSubcatId !== undefined ? reqSubcatId : req.body.subcatId;
+    if (resolvedSubcatVal !== undefined) {
+      subcatId = resolvedSubcatVal ? parseInt(resolvedSubcatVal) : null;
     }
 
     const updatedName = name !== undefined ? name : currentProduct.name;
@@ -786,6 +872,18 @@ export const updateProduct = async (req, res, next) => {
       }
     }
 
+    if (subcatId) {
+      if (!pathMap[subcatId]) {
+        res.status(400);
+        throw new Error('Invalid subcategory ID');
+      }
+      const rootCat = rootCategoryMap[subcatId];
+      if (categoryName && (!rootCat || rootCat.toLowerCase() !== categoryName.toLowerCase())) {
+        res.status(400);
+        throw new Error(`Validation Error: Selected subcategory does not belong to the selected category '${categoryName}'.`);
+      }
+    }
+
     // Fallback gender parsing if not resolved by subcategory path
     if (categoryName && categoryName.toLowerCase() === 'fashion' && !gender) {
       const allText = `${updatedName} ${updatedDesc}`.toLowerCase();
@@ -824,9 +922,10 @@ export const updateProduct = async (req, res, next) => {
     // Fetch updated product with category
     const finalResult = await db.execute({
       sql: `
-        SELECT p.*, c.name as category 
+        SELECT p.*, c.name as category, sel.business_name as seller_name
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sellers sel ON p.seller_id = sel.id
         WHERE p.id = ?
       `,
       args: [id]

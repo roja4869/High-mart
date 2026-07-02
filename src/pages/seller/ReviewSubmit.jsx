@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShieldCheck, User, Building, Landmark, FileText, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 
-const ReviewSubmit = ({ formData, onSubmit, onPrev, isLoading, submitError, submitSuccess }) => {
+const ReviewSubmit = ({ formData, onSubmit, onPrev, onReset, isLoading, submitError, submitSuccess }) => {
   const maskAccountNumber = (num) => {
     if (!num) return '';
     return '•'.repeat(num.length - 4) + num.slice(-4);
@@ -25,20 +25,28 @@ const ReviewSubmit = ({ formData, onSubmit, onPrev, isLoading, submitError, subm
         <p className="success-description" style={{ fontSize: '14px', maxWidth: '480px', margin: '0 auto 30px auto', lineHeight: '1.5' }}>
           You will receive access to the Seller Dashboard once your application is approved.
         </p>
-        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button 
             type="button"
             onClick={() => window.location.href = '/seller/dashboard'}
             className="wizard-btn-primary"
-            style={{ minWidth: '160px' }}
+            style={{ minWidth: '150px' }}
           >
             Go to Dashboard
           </button>
           <button 
             type="button"
+            onClick={onReset}
+            className="wizard-btn-secondary"
+            style={{ minWidth: '180px', border: '1px solid var(--primary-color)', color: 'var(--primary-color)', background: 'rgba(79, 70, 229, 0.05)' }}
+          >
+            Register Another Seller
+          </button>
+          <button 
+            type="button"
             onClick={() => window.location.href = '/'}
             className="wizard-btn-secondary"
-            style={{ minWidth: '140px' }}
+            style={{ minWidth: '130px' }}
           >
             Back to Home
           </button>

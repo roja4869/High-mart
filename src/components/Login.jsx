@@ -108,6 +108,7 @@ const Login = () => {
   // Quick Demo Access Login
   const handleQuickLogin = async (roleType) => {
     setIsLoading(true);
+    const from = location.state?.from?.pathname || '/dashboard';
     try {
       const emailVal = roleType === 'admin' ? 'admin@example.com' : 'jane@example.com';
       const passVal = roleType === 'admin' ? 'admin123' : 'password123';
@@ -280,18 +281,17 @@ const Login = () => {
                   marginTop: '12px',
                   width: '100%',
                   padding: '12px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-color, #e2e8f0)',
-                  background: 'var(--card-bg, #ffffff)',
-                  color: 'var(--text-color, #1e293b)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(79, 70, 229, 0.25)',
+                  background: 'rgba(79, 70, 229, 0.04)',
+                  color: 'var(--primary-color)',
                   fontWeight: '600',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                  transition: 'all 0.2s ease'
+                  transition: 'var(--transition-smooth)'
                 }}
               >
                 <Store size={16} />
@@ -319,6 +319,7 @@ const Login = () => {
                 </svg>
                 <span>Google</span>
               </button>
+
               <button 
                 type="button" 
                 onClick={() => handleSocialClick('Facebook')} 
@@ -355,19 +356,7 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Become a Seller Section */}
-            <div className="seller-register-promo-divider">
-              <p className="seller-promo-text">
-                Want to sell your products on High-Mart?
-              </p>
-              <Link 
-                to="/seller/register" 
-                className="seller-promo-link"
-              >
-                <Store size={18} className="store-promo-icon" />
-                <span>Become a Seller</span>
-              </Link>
-            </div>
+
 
             <div className="login-card-foot">
               <p>Don't have an account? <Link to="/register">Register</Link></p>

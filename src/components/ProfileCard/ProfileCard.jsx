@@ -107,7 +107,6 @@ const ProfileCard = ({ user, onUpdateUser, addToast }) => {
         dob: formData.dob,
         bio: formData.bio.trim()
       });
-
       if (res && res.success) {
         localStorage.setItem('highMartUser', JSON.stringify(res.user));
         onUpdateUser(res.user);

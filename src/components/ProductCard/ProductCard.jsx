@@ -7,7 +7,7 @@ import './ProductCard.css';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 25 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
 };
 
 const ProductCard = ({ product, onPreview }) => {

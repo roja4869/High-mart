@@ -62,6 +62,37 @@ const SellerRegister = () => {
     setCurrentStep(prev => prev - 1);
   };
 
+  const handleResetForm = () => {
+    setFormData({
+      fullName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      businessName: '',
+      gstNumber: '',
+      panNumber: '',
+      businessAddress: '',
+      city: '',
+      state: '',
+      pincode: '',
+      accountHolderName: '',
+      bankName: '',
+      accountNumber: '',
+      confirmAccountNumber: '',
+      ifscCode: '',
+      upiId: '',
+      profilePhoto: null,
+      gstCertificate: null,
+      panCard: null,
+      cancelledCheque: null,
+      businessLicense: null
+    });
+    setCurrentStep(1);
+    setSuccess(false);
+    setError(null);
+  };
+
   const handleFormSubmit = async () => {
     setIsLoading(true);
     setError(null);
@@ -185,6 +216,7 @@ const SellerRegister = () => {
             formData={formData}
             onPrev={handlePrevStep}
             onSubmit={handleFormSubmit}
+            onReset={handleResetForm}
             isLoading={isLoading}
             submitError={error}
             submitSuccess={success}
