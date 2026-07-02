@@ -114,30 +114,60 @@ export const getSellerDashboard = async (req, res, next) => {
 
     const sellerId = seller.id;
 
-    // 2. Fetch stats from seller_dashboard
-    const dashboardResult = await db.execute({
-      sql: "SELECT * FROM seller_dashboard WHERE seller_id = ?",
+    // Calculate total products
+    const prodCountRes = await db.execute({
+      sql: "SELECT COUNT(*) as count FROM products WHERE seller_id = ?",
+      args: [sellerId]
+    });
+    const totalProducts = prodCountRes.rows[0]?.count || 0;
+
+    // Calculate active products (listings with stock > 0)
+    const activeProdCountRes = await db.execute({
+      sql: "SELECT COUNT(*) as count FROM products WHERE seller_id = ? AND stock > 0",
+      args: [sellerId]
+    });
+    const activeListings = activeProdCountRes.rows[0]?.count || 0;
+
+    // Calculate total orders and revenue from order items matching this seller's products
+    const ordersRes = await db.execute({
+      sql: `
+        SELECT oi.price, oi.quantity, o.status, o.id as order_id
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        JOIN products p ON oi.product_id = p.id
+        WHERE p.seller_id = ?
+      `,
       args: [sellerId]
     });
 
-    const dbStats = dashboardResult.rows[0];
-    if (!dbStats) {
-      return res.json({
-        status: seller.status,
-        businessName: seller.business_name,
-        registeredDate: seller.created_at,
-        totalProducts: 0,
-        totalOrders: 0,
-        totalRevenue: 0,
-        pendingOrders: 0,
-        deliveredOrders: 0
-      });
-    }
+    const uniqueOrders = new Set();
+    const uniquePendingOrders = new Set();
+    const uniqueDeliveredOrders = new Set();
+    let totalRevenue = 0;
 
-    const stats = mapDashboardToCamel(dbStats, seller.status, seller.business_name, seller.created_at);
-    stats.deliveredOrders = dbStats.completed_orders || 0;
+    ordersRes.rows.forEach(row => {
+      uniqueOrders.add(row.order_id);
+      totalRevenue += (row.price || 0) * (row.quantity || 0);
 
-    res.json(stats);
+      const status = (row.status || '').toLowerCase();
+      if (status === 'pending') {
+        uniquePendingOrders.add(row.order_id);
+      } else if (status === 'delivered' || status === 'completed') {
+        uniqueDeliveredOrders.add(row.order_id);
+      }
+    });
+
+    res.json({
+      status: seller.status,
+      businessName: seller.business_name,
+      registeredDate: seller.created_at,
+      totalProducts,
+      activeListings,
+      totalOrders: uniqueOrders.size,
+      totalRevenue,
+      pendingOrders: uniquePendingOrders.size,
+      deliveredOrders: uniqueDeliveredOrders.size
+    });
   } catch (err) {
     next(err);
   }

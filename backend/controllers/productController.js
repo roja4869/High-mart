@@ -59,6 +59,14 @@ const formatProductRow = (row) => {
       return img;
     });
   }
+
+  // Schema compatibility fields
+  product.sellerId = product.seller_id;
+  product.sellerName = product.seller_name || 'High Mart';
+  product.approvalStatus = 'Approved';
+  product.isPublished = true;
+  product.isActive = product.stock > 0;
+  product.status = product.stock > 0 ? 'Active' : 'Out of Stock';
   
   return product;
 };
@@ -372,11 +380,13 @@ export const getProducts = async (req, res, next) => {
     
     let sql = `
       SELECT p.*, c.name as category,
+             sel.business_name as seller_name,
              s1.name as s1_name,
              s2.name as s2_name,
              s3.name as s3_name
       FROM products p 
       LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN sellers sel ON p.seller_id = sel.id
       LEFT JOIN subcategories s1 ON p.subcategory_id = s1.id
       LEFT JOIN category_relationships r1 ON s1.id = r1.child_id AND r1.parent_type = 'subcategory'
       LEFT JOIN subcategories s2 ON r1.parent_id = s2.id
@@ -389,7 +399,7 @@ export const getProducts = async (req, res, next) => {
     // Filter by seller ID
     if (seller_id) {
       sql += ` AND p.seller_id = ?`;
-      args.push(parseInt(seller_id));
+      args.push(isNaN(parseInt(seller_id)) ? seller_id : parseInt(seller_id));
     }
 
     // Filter by category name
@@ -519,11 +529,13 @@ export const getProductById = async (req, res, next) => {
     const result = await db.execute({
       sql: `
         SELECT p.*, c.name as category,
+               sel.business_name as seller_name,
                s1.name as s1_name,
                s2.name as s2_name,
                s3.name as s3_name
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sellers sel ON p.seller_id = sel.id
         LEFT JOIN subcategories s1 ON p.subcategory_id = s1.id
         LEFT JOIN category_relationships r1 ON s1.id = r1.child_id AND r1.parent_type = 'subcategory'
         LEFT JOIN subcategories s2 ON r1.parent_id = s2.id
@@ -582,7 +594,7 @@ export const getProductById = async (req, res, next) => {
  */
 export const createProduct = async (req, res, next) => {
   try {
-    const { name, description, price, category, subcategory_id, stock } = req.body;
+    const { name, description, price, category, subcategory_id, subcatId: reqSubcatId, stock } = req.body;
 
     if (!name || !price || !category || stock === undefined) {
       res.status(400);
@@ -591,7 +603,8 @@ export const createProduct = async (req, res, next) => {
 
     const priceNum = parseFloat(price);
     const stockNum = parseInt(stock);
-    const subcatId = subcategory_id ? parseInt(subcategory_id) : null;
+    const resolvedSubcatId = subcategory_id || reqSubcatId || req.body.subcatId;
+    const subcatId = resolvedSubcatId ? parseInt(resolvedSubcatId) : null;
 
     if (isNaN(priceNum) || priceNum <= 0) {
       res.status(400);
@@ -713,9 +726,10 @@ export const createProduct = async (req, res, next) => {
     // Fetch full new product with category
     const finalResult = await db.execute({
       sql: `
-        SELECT p.*, c.name as category 
+        SELECT p.*, c.name as category, sel.business_name as seller_name
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sellers sel ON p.seller_id = sel.id
         WHERE p.id = ?
       `,
       args: [newProductId]
@@ -768,7 +782,7 @@ export const updateProduct = async (req, res, next) => {
       }
     }
 
-    const { name, description, price, category, subcategory_id, stock } = req.body;
+    const { name, description, price, category, subcategory_id, subcatId: reqSubcatId, stock } = req.body;
 
     let categoryId = currentProduct.category_id;
     if (category !== undefined) {
@@ -791,8 +805,9 @@ export const updateProduct = async (req, res, next) => {
     }
 
     let subcatId = currentProduct.subcategory_id;
-    if (subcategory_id !== undefined) {
-      subcatId = subcategory_id ? parseInt(subcategory_id) : null;
+    const resolvedSubcatVal = subcategory_id !== undefined ? subcategory_id : reqSubcatId !== undefined ? reqSubcatId : req.body.subcatId;
+    if (resolvedSubcatVal !== undefined) {
+      subcatId = resolvedSubcatVal ? parseInt(resolvedSubcatVal) : null;
     }
 
     const updatedName = name !== undefined ? name : currentProduct.name;
@@ -907,9 +922,10 @@ export const updateProduct = async (req, res, next) => {
     // Fetch updated product with category
     const finalResult = await db.execute({
       sql: `
-        SELECT p.*, c.name as category 
+        SELECT p.*, c.name as category, sel.business_name as seller_name
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN sellers sel ON p.seller_id = sel.id
         WHERE p.id = ?
       `,
       args: [id]

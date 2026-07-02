@@ -25,6 +25,7 @@ const SellerDashboard = () => {
     businessName: '',
     registeredDate: '',
     totalProducts: 0,
+    activeListings: 0,
     totalOrders: 0,
     totalRevenue: 0,
     pendingOrders: 0,
@@ -62,6 +63,7 @@ const SellerDashboard = () => {
   const [newProdName, setNewProdName] = useState('');
   const [newProdPrice, setNewProdPrice] = useState('');
   const [newProdCategory, setNewProdCategory] = useState('');
+  const [newProdSubcategory, setNewProdSubcategory] = useState('');
   const [newProdStock, setNewProdStock] = useState('');
   const [newProdDesc, setNewProdDesc] = useState('');
   const [newProdImage, setNewProdImage] = useState(null);
@@ -179,6 +181,32 @@ const SellerDashboard = () => {
     }
   };
 
+  const getFlatSubcategories = (categoryName) => {
+    if (!categoryName) return [];
+    const parentCat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+    if (!parentCat) return [];
+    
+    const list = [];
+    const traverse = (node, path = '') => {
+      const currentPath = path ? `${path} > ${node.name}` : node.name;
+      if (node.type === 'subcategory') {
+        list.push({
+          id: node.id,
+          name: node.name,
+          path: currentPath
+        });
+      }
+      if (node.children) {
+        node.children.forEach(child => traverse(child, currentPath));
+      }
+    };
+    
+    if (parentCat.children) {
+      parentCat.children.forEach(child => traverse(child, parentCat.name));
+    }
+    return list;
+  };
+
   const handleAddProductSubmit = async (e) => {
     e.preventDefault();
     if (!newProdName || !newProdPrice || !newProdCategory || newProdStock === '') {
@@ -194,6 +222,9 @@ const SellerDashboard = () => {
     formData.append('name', newProdName);
     formData.append('price', newProdPrice);
     formData.append('category', newProdCategory);
+    if (newProdSubcategory) {
+      formData.append('subcatId', newProdSubcategory);
+    }
     formData.append('stock', newProdStock);
     formData.append('description', newProdDesc);
     if (newProdImage) {
@@ -213,6 +244,7 @@ const SellerDashboard = () => {
       setNewProdName('');
       setNewProdPrice('');
       setNewProdCategory('');
+      setNewProdSubcategory('');
       setNewProdStock('');
       setNewProdDesc('');
       setNewProdImage(null);
@@ -397,13 +429,13 @@ const SellerDashboard = () => {
               {/* Total Products (Unlocked if approved) */}
               <div className={`stat-card glass-effect ${!isApproved ? 'card-locked' : ''}`}>
                 <div className="stat-header">
-                  <span className="card-lbl">Total Products</span>
+                  <span className="card-lbl">Total Products / Active Listings</span>
                   <div className="icon-round-box bg-purple">
                     <Package size={18} />
                   </div>
                 </div>
-                <h3>{isApproved ? dashboardStats.totalProducts : 'Locked'}</h3>
-                <span className="card-subtext-detail">Active store listings</span>
+                <h3>{isApproved ? `${dashboardStats.totalProducts} / ${dashboardStats.activeListings}` : 'Locked'}</h3>
+                <span className="card-subtext-detail">Total products / Active listings</span>
               </div>
 
               {/* Total Orders (Unlocked if approved) */}
@@ -683,7 +715,10 @@ const SellerDashboard = () => {
                         <select 
                           required 
                           value={newProdCategory}
-                          onChange={(e) => setNewProdCategory(e.target.value)}
+                          onChange={(e) => {
+                            setNewProdCategory(e.target.value);
+                            setNewProdSubcategory('');
+                          }}
                         >
                           <option value="">Select Category</option>
                           {categories.map(c => (
@@ -691,6 +726,25 @@ const SellerDashboard = () => {
                           ))}
                         </select>
                       </div>
+
+                      {newProdCategory && getFlatSubcategories(newProdCategory).length > 0 && (
+                        <div className="form-group">
+                          <label>Listing Subcategory *</label>
+                          <select 
+                            required 
+                            value={newProdSubcategory}
+                            onChange={(e) => setNewProdSubcategory(e.target.value)}
+                          >
+                            <option value="">Select Subcategory</option>
+                            {getFlatSubcategories(newProdCategory).map(sub => (
+                              <option key={sub.id} value={sub.id}>{sub.path}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group-row">
                       <div className="form-group">
                         <label>Product Image File</label>
                         {!newProdImagePreview ? (
