@@ -36,9 +36,28 @@ const formatProductRow = (row) => {
     product.stockStatus = 'In Stock';
   }
 
+  // Format single product.image
+  if (product.image && !product.image.startsWith('http') && !product.image.startsWith('/uploads')) {
+    product.image = `/uploads/${product.image}`;
+  }
+
   // Ensure there is at least one image in images array
   if (!product.images || product.images.length === 0) {
-    product.images = [product.image ? (product.image.startsWith('http') ? product.image : `/uploads/${product.image}`) : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'];
+    product.images = [
+      product.image 
+        ? (product.image.startsWith('http') || product.image.startsWith('/uploads') 
+            ? product.image 
+            : `/uploads/${product.image}`) 
+        : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80'
+    ];
+  } else {
+    // Format all elements in the images array
+    product.images = product.images.map(img => {
+      if (img && !img.startsWith('http') && !img.startsWith('/uploads')) {
+        return `/uploads/${img}`;
+      }
+      return img;
+    });
   }
   
   return product;
@@ -576,7 +595,7 @@ export const createProduct = async (req, res, next) => {
     }
 
     // Handle image file name
-    let image = req.file ? req.file.filename : 'default_product.jpg';
+    let image = req.file ? `/uploads/products/${req.file.filename}` : 'default_product.jpg';
 
     // Validate
     validateProductMapping(category, pathParts, name, description || '', image);
@@ -780,7 +799,7 @@ export const updateProduct = async (req, res, next) => {
     }
 
     // If new image is uploaded, use it
-    let updatedImage = req.file ? req.file.filename : currentProduct.image;
+    let updatedImage = req.file ? `/uploads/products/${req.file.filename}` : currentProduct.image;
 
     // Validate
     if (categoryName) {
