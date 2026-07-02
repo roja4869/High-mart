@@ -70,3 +70,21 @@ export const sellerDashboardAccess = (req, res, next) => {
     res.status(401).json({ error: 'Not authorized, login required' });
   }
 };
+
+export const sellerOrAdmin = (req, res, next) => {
+  if (req.user) {
+    if (req.user.role === 'admin') {
+      return next();
+    }
+    if (req.user.role === 'seller') {
+      if (req.user.status === 'Approved') {
+        return next();
+      } else {
+        return res.status(403).json({ error: 'Access denied: Seller account is pending approval.' });
+      }
+    }
+    res.status(403).json({ error: 'Access denied: Admins or approved sellers only' });
+  } else {
+    res.status(401).json({ error: 'Not authorized, login required' });
+  }
+};
